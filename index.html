@@ -1,0 +1,585 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Spirit Pocket</title>
+  <style>
+    :root {
+      --bg: #14151a;
+      --card: #1f2029;
+      --accent: #5865f2;
+      --text: #ffffff;
+      --subtext: #8e9297;
+      --gold: #f1c40f;
+    }
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--text);
+      font-family: system-ui, -apple-system, sans-serif;
+      user-select: none;
+    }
+    header {
+      background: var(--card);
+      padding: 12px 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 2px solid #2b2c36;
+    }
+    .gold-box {
+      font-size: 18px;
+      font-weight: bold;
+      color: var(--gold);
+    }
+    .capsule-box {
+      font-size: 16px;
+      margin-left: 15px;
+    }
+    nav {
+      display: flex;
+      justify-content: center;
+      gap: 10px;
+      margin: 10px 0;
+    }
+    nav button {
+      background: #2b2c36;
+      border: none;
+      color: var(--text);
+      padding: 8px 20px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: bold;
+    }
+    nav button.active {
+      background: var(--accent);
+    }
+    .view-panel {
+      display: none;
+      padding: 10px;
+      max-width: 720px;
+      margin: 0 auto;
+    }
+    .view-panel.active {
+      display: block;
+    }
+    canvas {
+      background: #22252a;
+      border: 2px solid #36393f;
+      border-radius: 8px;
+      display: block;
+      margin: 0 auto;
+    }
+    .card-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 12px;
+      margin-top: 10px;
+    }
+    .spirit-card {
+      background: var(--card);
+      padding: 12px;
+      border-radius: 8px;
+      border: 1px solid #36393f;
+      text-align: center;
+    }
+    .spirit-card .icon { font-size: 44px; margin-bottom: 6px; }
+    .action-btn {
+      background: var(--accent);
+      border: none;
+      color: white;
+      padding: 6px 12px;
+      border-radius: 4px;
+      cursor: pointer;
+      margin-top: 6px;
+      font-weight: bold;
+      width: 100%;
+    }
+    .action-btn:hover { opacity: 0.9; }
+    .arena-box {
+      background: var(--card);
+      padding: 20px;
+      border-radius: 8px;
+      text-align: center;
+    }
+    .battle-hud {
+      display: flex;
+      justify-content: space-around;
+      align-items: center;
+      margin: 20px 0;
+    }
+    .hp-bar-bg {
+      background: #444;
+      height: 12px;
+      width: 120px;
+      border-radius: 6px;
+      overflow: hidden;
+      margin: 6px auto;
+    }
+    .hp-bar-fill {
+      background: #2ecc71;
+      height: 100%;
+      width: 100%;
+      transition: width 0.3s;
+    }
+  </style>
+
+  <!-- Discord Embedded SDK -->
+  <script src="https://cdn.jsdelivr.net/npm/@discord/embedded-app-sdk@1.1.0/output/index.min.js"></script>
+
+  <!-- Firebase Realtime Database SDK -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+    import { getDatabase, ref, set, get, update, onValue, onDisconnect } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+
+    // 1. ใส่ Config Firebase ของคุณตรงนี้
+    const firebaseConfig = {
+      apiKey: "AIzaSyC6EcXI9tFmY9ryhIgZ23Uqn3E25jAEEXU",
+      authDomain: "s3l-agent-world.firebaseapp.com",
+      databaseURL: "https://s3l-agent-world-default-rtdb.asia-southeast1.firebasedatabase.app",
+      projectId: "s3l-agent-world",
+      storageBucket: "s3l-agent-world.firebasestorage.app",
+      messagingSenderId: "239454558983",
+      appId: "1:239454558983:web:2533881f808c66df1743a2"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
+
+    // ค่าคงที่ข้อมูลสายพันธุ์มอนสเตอร์
+    const SPECIES_CONFIG = {
+      zombie: { name: "Zombie", icon: "🧟", dropIcon: "🦠", dropTime: 30000, sellPrice: 5, catchRate: 0.85, baseHp: 80, baseAtk: 15, baseDef: 5 },
+      genie: { name: "Genie", icon: "🧞", dropIcon: "🔵", dropTime: 60000, sellPrice: 15, catchRate: 0.55, baseHp: 140, baseAtk: 30, baseDef: 12 },
+      orc: { name: "Orc", icon: "🧌", dropIcon: "📿", dropTime: 120000, sellPrice: 40, catchRate: 0.30, baseHp: 220, baseAtk: 55, baseDef: 25 },
+      high_orc: { name: "High Orc", icon: "👹", dropIcon: "🧧", dropTime: 300000, sellPrice: 120, catchRate: 0.12, baseHp: 350, baseAtk: 90, baseDef: 45 }
+    };
+
+    let myId = "player_" + Math.floor(Math.random() * 10000);
+    let roomId = "voice_room_default";
+    let myData = {
+      gold: 100,
+      capsules: 3,
+      spirits: {}
+    };
+
+    // เชื่อมต่อ Discord SDK
+    async function initDiscord() {
+      if (window.DiscordSDK) {
+        try {
+          const discordSdk = new window.DiscordSDK.DiscordSDK("1561819450917916842");
+          await discordSdk.ready();
+          if (discordSdk.channelId) roomId = discordSdk.channelId;
+          if (discordSdk.user && discordSdk.user.id) myId = discordSdk.user.id;
+        } catch (e) {
+          console.warn("รันนอก Discord:", e);
+        }
+      }
+    }
+
+    // จัดการ UI Tabs
+    window.switchTab = (tabId) => {
+      document.querySelectorAll(".view-panel").forEach(p => p.classList.remove("active"));
+      document.querySelectorAll("nav button").forEach(b => b.classList.remove("active"));
+      document.getElementById(tabId).classList.add("active");
+      document.getElementById("btn_" + tabId).classList.add("active");
+      if (tabId === "farm") renderFarm();
+      if (tabId === "arena") renderArenaPrep();
+    };
+
+    // โหลดข้อมูลผู้เล่นจาก Firebase
+    async function loadUserData() {
+      const userRef = ref(db, `players/${myId}`);
+      const snap = await get(userRef);
+      if (snap.exists()) {
+        myData = snap.val();
+      } else {
+        await set(userRef, myData);
+      }
+      updateTopBar();
+    }
+
+    function saveUserData() {
+      update(ref(db, `players/${myId}`), myData);
+      updateTopBar();
+    }
+
+    function updateTopBar() {
+      document.getElementById("goldDisplay").innerText = `💰 ${myData.gold} Gold`;
+      document.getElementById("capsuleDisplay").innerText = `🟣 ${myData.capsules} ลูก`;
+    }
+
+    // ==========================================
+    // MAP & MOVEMENT SYSTEM
+    // ==========================================
+    const canvas = document.getElementById("gameCanvas");
+    const ctx = canvas.getContext("2d");
+    let myPos = { x: 300, y: 200 };
+    let roomPlayers = {};
+    let wildSpirits = {};
+
+    function initMapNetwork() {
+      const playerPosRef = ref(db, `rooms/${roomId}/players/${myId}`);
+      set(playerPosRef, { x: myPos.x, y: myPos.y, id: myId });
+      onDisconnect(playerPosRef).remove();
+
+      onValue(ref(db, `rooms/${roomId}/players`), (snap) => {
+        roomPlayers = snap.val() || {};
+        drawMap();
+      });
+
+      // สุ่มมอนสเตอร์ป่าบนแมพของห้อง
+      const wildRef = ref(db, `rooms/${roomId}/wildSpirits`);
+      onValue(wildRef, (snap) => {
+        wildSpirits = snap.val() || {};
+        if (Object.keys(wildSpirits).length < 4) {
+          spawnWildSpirit();
+        }
+        drawMap();
+      });
+    }
+
+    function spawnWildSpirit() {
+      const keys = ["zombie", "zombie", "genie", "orc", "high_orc"];
+      const chosenKey = keys[Math.floor(Math.random() * keys.length)];
+      const id = "wild_" + Date.now() + "_" + Math.floor(Math.random() * 100);
+      set(ref(db, `rooms/${roomId}/wildSpirits/${id}`), {
+        id,
+        type: chosenKey,
+        x: Math.random() * (canvas.width - 60) + 30,
+        y: Math.random() * (canvas.height - 60) + 30
+      });
+    }
+
+    function drawMap() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      // วาดพื้นตาราง
+      ctx.strokeStyle = "#2e323b";
+      for (let x = 0; x < canvas.width; x += 30) {
+        ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, canvas.height); ctx.stroke();
+      }
+      for (let y = 0; y < canvas.height; y += 30) {
+        ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(canvas.width, y); ctx.stroke();
+      }
+
+      // วาดมอนสเตอร์ป่า
+      ctx.font = "24px sans-serif";
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      for (const [id, s] of Object.entries(wildSpirits)) {
+        const conf = SPECIES_CONFIG[s.type];
+        ctx.fillText(conf.icon, s.x, s.y);
+      }
+
+      // วาดผู้เล่นทุกคน
+      for (const [id, p] of Object.entries(roomPlayers)) {
+        const isMe = id === myId;
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, 14, 0, Math.PI * 2);
+        ctx.fillStyle = isMe ? "#5865f2" : "#57f287";
+        ctx.fill();
+        ctx.lineWidth = 2;
+        ctx.strokeStyle = "#ffffff";
+        ctx.stroke();
+      }
+    }
+
+    // การกดปุ่มเดิน + ตรวจจับการชนมอนสเตอร์เพื่อจับ
+    window.addEventListener("keydown", (e) => {
+      const SPEED = 10;
+      let moved = false;
+      if (e.key === "w" || e.key === "ArrowUp") { myPos.y = Math.max(20, myPos.y - SPEED); moved = true; }
+      if (e.key === "s" || e.key === "ArrowDown") { myPos.y = Math.min(canvas.height - 20, myPos.y + SPEED); moved = true; }
+      if (e.key === "a" || e.key === "ArrowLeft") { myPos.x = Math.max(20, myPos.x - SPEED); moved = true; }
+      if (e.key === "d" || e.key === "ArrowRight") { myPos.x = Math.min(canvas.width - 20, myPos.x + SPEED); moved = true; }
+
+      if (moved) {
+        set(ref(db, `rooms/${roomId}/players/${myId}`), { x: myPos.x, y: myPos.y, id: myId });
+        checkCatchWild();
+      }
+    });
+
+    function checkCatchWild() {
+      for (const [id, s] of Object.entries(wildSpirits)) {
+        const dist = Math.hypot(myPos.x - s.x, myPos.y - s.y);
+        if (dist < 26) {
+          // ลบมอนสเตอร์ตัวนี้ออกจากแมพกลางก่อน
+          set(ref(db, `rooms/${roomId}/wildSpirits/${id}`), null);
+          attemptCatch(s.type);
+          break;
+        }
+      }
+    }
+
+    function attemptCatch(speciesKey) {
+      const conf = SPECIES_CONFIG[speciesKey];
+      if (myData.capsules <= 0) {
+        alert(`เจอมอนสเตอร์ ${conf.name} ${conf.icon} แต่ไม่มีแคปซูลจับ! (ไปซื้อที่หน้าร้านค้า)`);
+        return;
+      }
+      myData.capsules--;
+      const isSuccess = Math.random() <= conf.catchRate;
+      if (isSuccess) {
+        const newSpiritId = "sp_" + Date.now();
+        if (!myData.spirits) myData.spirits = {};
+        myData.spirits[newSpiritId] = {
+          id: newSpiritId,
+          type: speciesKey,
+          level: 1,
+          exp: 0,
+          hp: conf.baseHp,
+          maxHp: conf.baseHp,
+          atk: conf.baseAtk,
+          def: conf.baseDef,
+          lastHarvestAt: Date.now()
+        };
+        saveUserData();
+        alert(`สำเร็จ! จับ ${conf.name} ${conf.icon} ได้แล้ว! ย้ายเข้าฟาร์มเรียบร้อย`);
+      } else {
+        saveUserData();
+        alert(`มอนสเตอร์ ${conf.name} ${conf.icon} วิ่งหนีไปได้!`);
+      }
+    }
+
+    // ==========================================
+    // FARM & INVENTORY SYSTEM
+    // ==========================================
+    function renderFarm() {
+      const container = document.getElementById("farmSpiritsList");
+      container.innerHTML = "";
+
+      if (!myData.spirits || Object.keys(myData.spirits).length === 0) {
+        container.innerHTML = "<div style='color:var(--subtext);'>ยังไม่มีสัตว์เลี้ยง ออกไปจับที่หน้าแมพก่อน!</div>";
+        return;
+      }
+
+      for (const [id, spirit] of Object.entries(myData.spirits)) {
+        const conf = SPECIES_CONFIG[spirit.type];
+        const now = Date.now();
+        const dropCount = Math.floor((now - spirit.lastHarvestAt) / conf.dropTime);
+
+        const card = document.createElement("div");
+        card.className = "spirit-card";
+        card.innerHTML = `
+          <div class="icon">${conf.icon}</div>
+          <div style="font-weight:bold;">${conf.name} (Lv. ${spirit.level})</div>
+          <div style="font-size:12px; color:var(--subtext);">HP: ${spirit.maxHp} | ATK: ${spirit.atk} | DEF: ${spirit.def}</div>
+          <div style="margin: 8px 0; font-size:14px;">ผลผลิตสะสม: ${conf.dropIcon} <b>${dropCount}</b> ชิ้น</div>
+          <button class="action-btn" onclick="harvestDrops('${id}', ${dropCount}, ${conf.sellPrice})">เก็บขาย (${dropCount * conf.sellPrice} G)</button>
+          <button class="action-btn" style="background:#27ae60;" onclick="feedSpirit('${id}')">ป้อนเนื้อเวท 🥩 (50 G)</button>
+        `;
+        container.appendChild(card);
+      }
+    }
+
+    window.harvestDrops = (spiritId, count, pricePerUnit) => {
+      if (count <= 0) {
+        alert("ยังไม่มีผลผลิตให้เก็บ คอยอีกสักครู่!");
+        return;
+      }
+      const earned = count * pricePerUnit;
+      myData.gold += earned;
+      myData.spirits[spiritId].lastHarvestAt = Date.now();
+      saveUserData();
+      renderFarm();
+    };
+
+    window.feedSpirit = (spiritId) => {
+      if (myData.gold < 50) {
+        alert("Gold ไม่พอซื้อเนื้อเวทมนตร์ (ต้องการ 50 Gold)");
+        return;
+      }
+      myData.gold -= 50;
+      const s = myData.spirits[spiritId];
+      s.level++;
+      s.maxHp += 20;
+      s.hp = s.maxHp;
+      s.atk += 5;
+      s.def += 3;
+      saveUserData();
+      renderFarm();
+    };
+
+    window.buyCapsule = () => {
+      if (myData.gold < 25) {
+        alert("Gold ไม่พอซื้อแคปซูล (ต้องการ 25 Gold)");
+        return;
+      }
+      myData.gold -= 25;
+      myData.capsules++;
+      saveUserData();
+    };
+
+    // ==========================================
+    // ARENA SYSTEM (PvE AI Test)
+    // ==========================================
+    let currentBattle = null;
+
+    function renderArenaPrep() {
+      const select = document.getElementById("arenaSpiritSelect");
+      select.innerHTML = "";
+      if (!myData.spirits || Object.keys(myData.spirits).length === 0) {
+        select.innerHTML = "<option>ไม่มีมอนสเตอร์พร้อมสู้</option>";
+        return;
+      }
+      for (const [id, s] of Object.entries(myData.spirits)) {
+        const conf = SPECIES_CONFIG[s.type];
+        const opt = document.createElement("option");
+        opt.value = id;
+        opt.innerText = `${conf.icon} ${conf.name} Lv.${s.level} (ATK: ${s.atk})`;
+        select.appendChild(opt);
+      }
+    }
+
+    window.startBattle = () => {
+      const select = document.getElementById("arenaSpiritSelect");
+      const selectedId = select.value;
+      if (!selectedId || !myData.spirits[selectedId]) return;
+
+      const myFighter = JSON.parse(JSON.stringify(myData.spirits[selectedId]));
+      const enemyKeys = ["zombie", "genie", "orc", "high_orc"];
+      const randKey = enemyKeys[Math.floor(Math.random() * enemyKeys.length)];
+      const enemyConf = SPECIES_CONFIG[randKey];
+
+      const enemyFighter = {
+        name: "Wild " + enemyConf.name,
+        icon: enemyConf.icon,
+        hp: enemyConf.baseHp,
+        maxHp: enemyConf.baseHp,
+        atk: enemyConf.baseAtk,
+        def: enemyConf.baseDef
+      };
+
+      currentBattle = { my: myFighter, enemy: enemyFighter, isMyTurn: true };
+      document.getElementById("arenaPrep").style.display = "none";
+      document.getElementById("arenaCombat").style.display = "block";
+      updateBattleUI();
+    };
+
+    function updateBattleUI() {
+      const b = currentBattle;
+      document.getElementById("myFighterName").innerText = `${SPECIES_CONFIG[b.my.type].icon} ${SPECIES_CONFIG[b.my.type].name}`;
+      document.getElementById("enemyFighterName").innerText = `${b.enemy.icon} ${b.enemy.name}`;
+
+      document.getElementById("myHpText").innerText = `${Math.max(0, b.my.hp)} / ${b.my.maxHp}`;
+      document.getElementById("enemyHpText").innerText = `${Math.max(0, b.enemy.hp)} / ${b.enemy.maxHp}`;
+
+      document.getElementById("myHpFill").style.width = `${Math.max(0, (b.my.hp / b.my.maxHp) * 100)}%`;
+      document.getElementById("enemyHpFill").style.width = `${Math.max(0, (b.enemy.hp / b.enemy.maxHp) * 100)}%`;
+    }
+
+    window.executeAttack = () => {
+      if (!currentBattle || !currentBattle.isMyTurn) return;
+
+      // เราโจมตี
+      const dmgToEnemy = Math.max(5, currentBattle.my.atk - currentBattle.enemy.def);
+      currentBattle.enemy.hp -= dmgToEnemy;
+      document.getElementById("combatLog").innerText = `คุณสร้างดาเมจ ${dmgToEnemy} ใส่ศัตรู!`;
+      updateBattleUI();
+
+      if (currentBattle.enemy.hp <= 0) {
+        alert("ชนะการต่อสู้! ได้รับ 50 Gold");
+        myData.gold += 50;
+        saveUserData();
+        endBattle();
+        return;
+      }
+
+      // เทิร์นศัตรูโจมตีสวนกลับ
+      currentBattle.isMyTurn = false;
+      setTimeout(() => {
+        const dmgToMe = Math.max(5, currentBattle.enemy.atk - currentBattle.my.def);
+        currentBattle.my.hp -= dmgToMe;
+        document.getElementById("combatLog").innerText = `ศัตรูโจมตีสวนกลับ ${dmgToMe} ดาเมจ!`;
+        updateBattleUI();
+
+        if (currentBattle.my.hp <= 0) {
+          alert("คุณพ่ายแพ้ในการต่อสู้!");
+          endBattle();
+          return;
+        }
+        currentBattle.isMyTurn = true;
+      }, 700);
+    };
+
+    function endBattle() {
+      document.getElementById("arenaCombat").style.display = "none";
+      document.getElementById("arenaPrep").style.display = "block";
+      currentBattle = null;
+    }
+
+    // เริ่มระบบ
+    async function boot() {
+      await initDiscord();
+      await loadUserData();
+      initMapNetwork();
+    }
+    boot();
+  </script>
+</head>
+<body>
+
+  <header>
+    <div style="font-weight:bold; font-size:18px;">✨ Spirit Pocket</div>
+    <div>
+      <span class="gold-box" id="goldDisplay">💰 100 Gold</span>
+      <span class="capsule-box" id="capsuleDisplay">🟣 3 ลูก</span>
+    </div>
+  </header>
+
+  <nav>
+    <button id="btn_map" class="active" onclick="switchTab('map')">🗺️ แผนที่สำรวจ</button>
+    <button id="btn_farm" onclick="switchTab('farm')">🏡 ฟาร์มสัตว์เลี้ยง</button>
+    <button id="btn_arena" onclick="switchTab('arena')">⚔️ ลานประลอง</button>
+  </nav>
+
+  <!-- แท็บ 1: แผนที่ -->
+  <div id="map" class="view-panel active">
+    <canvas id="gameCanvas" width="600" height="380"></canvas>
+    <div style="text-align:center; margin-top:8px; color:var(--subtext); font-size:13px;">
+      กดปุ่ม W, A, S, D หรือลูกศร เพื่อเดินสำรวจชนมอนสเตอร์เพื่อจับ
+    </div>
+  </div>
+
+  <!-- แท็บ 2: ฟาร์ม -->
+  <div id="farm" class="view-panel">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+      <h3>สัตว์เลี้ยงในคลัง</h3>
+      <button class="action-btn" style="width:auto;" onclick="buyCapsule()">ซื้อแคปซูล 🟣 (+1 ลูก / 25 G)</button>
+    </div>
+    <div id="farmSpiritsList" class="card-grid"></div>
+  </div>
+
+  <!-- แท็บ 3: ลานประลอง -->
+  <div id="arena" class="view-panel">
+    <div class="arena-box">
+      <div id="arenaPrep">
+        <h3>เลือกสัตว์เลี้ยงลงสนาม</h3>
+        <select id="arenaSpiritSelect" style="padding:8px; border-radius:4px; margin-bottom:12px;"></select>
+        <br/>
+        <button class="action-btn" style="max-width:200px; margin:0 auto;" onclick="startBattle()">ค้นหาคู่ต่อสู้</button>
+      </div>
+
+      <div id="arenaCombat" style="display:none;">
+        <div class="battle-hud">
+          <div>
+            <div id="myFighterName" style="font-weight:bold;">My Spirit</div>
+            <div class="hp-bar-bg"><div id="myHpFill" class="hp-bar-fill"></div></div>
+            <div id="myHpText" style="font-size:12px;">100 / 100</div>
+          </div>
+          <div style="font-size:24px; font-weight:bold; color:#e74c3c;">VS</div>
+          <div>
+            <div id="enemyFighterName" style="font-weight:bold;">Enemy</div>
+            <div class="hp-bar-bg"><div id="enemyHpFill" class="hp-bar-fill"></div></div>
+            <div id="enemyHpText" style="font-size:12px;">100 / 100</div>
+          </div>
+        </div>
+        <div id="combatLog" style="margin:12px 0; color:var(--gold); font-size:14px;">เริ่มการต่อสู้!</div>
+        <button class="action-btn" style="max-width:200px; margin:0 auto;" onclick="executeAttack()">โจมตี!</button>
+      </div>
+    </div>
+  </div>
+
+</body>
+</html>
