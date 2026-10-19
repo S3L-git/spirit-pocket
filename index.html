@@ -3,997 +3,308 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Spirit Pocket RPG - Definitive Edition</title>
-  <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@400;500;600;700;800&family=Press+Start+2P&display=swap" rel="stylesheet">
+  <title>Spirit Pocket RPG - Beta 1.0</title>
+  <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@400;600;700;800&family=Press+Start+2P&display=swap" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/@discord/embedded-app-sdk@1.0.0/dist/umd/index.js"></script>
   <style>
-    :root {
-      --bg-dark: #07090e;
-      --panel-bg: #111522;
-      --card-bg: #181e30;
-      --card-hover: #212942;
-      --accent: #5865f2;
-      --accent-glow: rgba(88, 101, 242, 0.45);
-      --gold: #fbbf24;
-      --ball: #c084fc;
-      --hp-high: #10b981;
-      --hp-mid: #f59e0b;
-      --hp-low: #ef4444;
-      --text: #f8fafc;
-      --text-muted: #94a3b8;
-      --border: rgba(255, 255, 255, 0.1);
-    }
-
     * {
       box-sizing: border-box;
       margin: 0;
       padding: 0;
       outline: none !important;
-      -webkit-tap-highlight-color: transparent;
-      user-select: none;
-      -webkit-user-select: none;
+      user-select: none !important;
+      -webkit-user-select: none !important;
+      -webkit-user-drag: none !important;
+      -webkit-tap-highlight-color: transparent !important;
     }
 
     html, body {
       width: 100vw;
       height: 100vh;
       overflow: hidden !important;
-      background-color: var(--bg-dark);
-      color: var(--text);
+      background: #06080e;
       font-family: 'Kanit', sans-serif;
-      display: flex;
-      flex-direction: column;
-    }
-
-    /* Top Header HUD */
-    header {
-      height: 52px;
-      width: 100%;
-      padding: 0 20px;
-      background: linear-gradient(90deg, #0f1320 0%, #171d30 50%, #0f1320 100%);
-      border-bottom: 1px solid var(--border);
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      flex-shrink: 0;
-      z-index: 100;
-      box-shadow: 0 4px 20px rgba(0,0,0,0.5);
-    }
-
-    .brand {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      font-weight: 800;
-      font-size: 1.2rem;
-      letter-spacing: 0.5px;
-      background: linear-gradient(135deg, #38bdf8, #a855f7, #fbbf24);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-    }
-
-    .brand-badge {
-      font-family: 'Press Start 2P', monospace;
-      font-size: 0.55rem;
-      background: #ef4444;
       color: #fff;
-      -webkit-text-fill-color: #fff;
-      padding: 4px 7px;
-      border-radius: 4px;
-      letter-spacing: 0;
+      position: fixed;
+      inset: 0;
     }
 
-    .hud-stats {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-    }
-
-    .hud-pill {
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      background: rgba(0, 0, 0, 0.55);
-      border: 1px solid var(--border);
-      padding: 5px 12px;
-      border-radius: 999px;
-      font-size: 0.85rem;
-      font-weight: 600;
-    }
-
-    /* Navigation Tabs */
-    nav {
-      display: flex;
-      background: var(--panel-bg);
-      padding: 6px 16px;
-      gap: 10px;
-      border-bottom: 1px solid var(--border);
-      flex-shrink: 0;
-      z-index: 95;
-    }
-
-    .tab-btn {
-      flex: 1;
-      padding: 9px 14px;
-      background: var(--card-bg);
-      border: 1px solid rgba(255,255,255,0.06);
-      color: var(--text-muted);
-      font-family: inherit;
-      font-size: 0.9rem;
-      font-weight: 600;
-      border-radius: 10px;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 8px;
-      transition: all 0.18s ease;
-    }
-
-    .tab-btn:hover {
-      background: var(--card-hover);
-      color: #fff;
-    }
-
-    .tab-btn.active {
-      background: linear-gradient(135deg, #5865f2, #7c3aed);
-      color: #fff;
-      border-color: rgba(255,255,255,0.25);
-      box-shadow: 0 4px 15px var(--accent-glow);
-    }
-
-    /* Main Viewport */
-    main {
-      flex: 1;
-      width: 100%;
-      height: calc(100vh - 102px);
-      position: relative;
-      overflow: hidden;
-      background: radial-gradient(circle at center, #111827 0%, #05070c 100%);
-      display: flex;
-      justify-content: center;
-      align-items: center;
-    }
-
-    .view-section {
+    /* Fullscreen Canvas */
+    #gameViewport {
       position: absolute;
       inset: 0;
-      width: 100%;
-      height: 100%;
-      display: none;
-      overflow: hidden;
-    }
-
-    .view-section.active {
-      display: flex;
-    }
-
-    /* 1. MAP VIEW (1550:750 Strict Landscape) */
-    #view-map {
-      justify-content: center;
-      align-items: center;
-      padding: 8px;
-    }
-
-    #stageContainer {
-      position: relative;
-      width: min(98vw, calc((100vh - 118px) * (1550 / 750)));
-      height: min(calc(98vw * (750 / 1550)), calc(100vh - 118px));
-      aspect-ratio: 1550 / 750;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      border-radius: 14px;
-      overflow: hidden;
-      box-shadow: 0 15px 50px rgba(0, 0, 0, 0.9), 0 0 0 2px rgba(255, 255, 255, 0.12);
-    }
-
-    #gameCanvas {
-      width: 100%;
-      height: 100%;
+      width: 100vw;
+      height: 100vh;
       display: block;
-      cursor: pointer;
-      background: #0d1322;
-    }
-
-    /* Map Overlays */
-    .map-hud-top {
-      position: absolute;
-      top: 12px;
-      left: 12px;
-      display: flex;
-      gap: 10px;
-      pointer-events: none;
-      z-index: 20;
-    }
-
-    .zone-banner {
-      background: rgba(15, 23, 42, 0.88);
-      backdrop-filter: blur(8px);
-      border: 1px solid rgba(255, 255, 255, 0.18);
-      padding: 6px 14px;
-      border-radius: 10px;
-      font-size: 0.85rem;
-      font-weight: 700;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.4);
-    }
-
-    .companion-hud {
-      background: rgba(15, 23, 42, 0.88);
-      backdrop-filter: blur(8px);
-      border: 1px solid rgba(255, 255, 255, 0.18);
-      padding: 6px 14px;
-      border-radius: 10px;
-      font-size: 0.8rem;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-
-    .map-hint {
-      position: absolute;
-      bottom: 12px;
-      left: 12px;
-      background: rgba(15, 23, 42, 0.85);
-      border: 1px solid rgba(255,255,255,0.12);
-      padding: 6px 12px;
-      border-radius: 8px;
-      font-size: 0.78rem;
-      color: #cbd5e1;
-      pointer-events: none;
-      z-index: 20;
-    }
-
-    /* Fixed Ergonomic Gamepad D-Pad (No yellow focus border!) */
-    .dpad-pad {
-      position: absolute;
-      bottom: 14px;
-      right: 14px;
-      width: 136px;
-      height: 136px;
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      grid-template-rows: repeat(3, 1fr);
-      gap: 5px;
-      z-index: 30;
-      background: rgba(15, 23, 42, 0.55);
-      padding: 6px;
-      border-radius: 20px;
-      border: 1px solid rgba(255,255,255,0.12);
-      backdrop-filter: blur(6px);
-    }
-
-    .dpad-key {
-      background: linear-gradient(180deg, #2a3454 0%, #1a2138 100%);
-      border: 1px solid rgba(255, 255, 255, 0.22);
-      border-radius: 10px;
-      color: #f8fafc;
-      font-size: 1.15rem;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      cursor: pointer;
-      box-shadow: 0 4px 0 #0d111f;
-      transition: transform 0.06s, background 0.1s;
-      outline: none !important;
-    }
-
-    .dpad-key:hover {
-      background: linear-gradient(180deg, #37446e 0%, #232c4b 100%);
-    }
-
-    .dpad-key:active, .dpad-key.pressed {
-      transform: translateY(3px);
-      box-shadow: 0 1px 0 #0d111f;
-      background: var(--accent);
-      border-color: #fff;
-    }
-
-    .dpad-center {
-      background: rgba(255,255,255,0.05);
-      border-radius: 50%;
-      margin: 6px;
-    }
-
-    /* Scrollable Panel Views (Farm, Shop, Battle) */
-    .panel-scroll {
-      width: 100%;
-      height: 100%;
-      overflow-y: auto;
-      padding: 20px 24px;
-      display: flex;
-      flex-direction: column;
-      gap: 20px;
-    }
-
-    .panel-scroll::-webkit-scrollbar { width: 6px; }
-    .panel-scroll::-webkit-scrollbar-thumb { background: #334155; border-radius: 99px; }
-
-    .section-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      max-width: 1200px;
-      width: 100%;
-      margin: 0 auto;
-      border-bottom: 1px solid var(--border);
-      padding-bottom: 10px;
-    }
-
-    /* Cards & Grids */
-    .cards-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
-      gap: 16px;
-      width: 100%;
-      max-width: 1200px;
-      margin: 0 auto;
-    }
-
-    .poke-card {
-      background: linear-gradient(180deg, #1b2238 0%, #121726 100%);
-      border: 1px solid rgba(255,255,255,0.1);
-      border-radius: 16px;
-      padding: 16px;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 8px;
-      position: relative;
-      transition: transform 0.2s, border-color 0.2s;
-    }
-
-    .poke-card:hover {
-      transform: translateY(-3px);
-      border-color: rgba(255,255,255,0.25);
-    }
-
-    .poke-card.companion-selected {
-      border: 2px solid #38bdf8;
-      box-shadow: 0 0 20px rgba(56, 189, 248, 0.25);
-    }
-
-    .type-badge {
-      font-size: 0.7rem;
-      font-weight: 700;
-      padding: 2px 10px;
-      border-radius: 99px;
-      text-transform: uppercase;
-    }
-    .type-Grass { background: rgba(16, 185, 129, 0.2); color: #34d399; border: 1px solid #059669; }
-    .type-Fire { background: rgba(239, 68, 68, 0.2); color: #f87171; border: 1px solid #dc2626; }
-    .type-Water { background: rgba(56, 189, 248, 0.2); color: #38bdf8; border: 1px solid #0284c7; }
-    .type-Electric { background: rgba(250, 204, 21, 0.2); color: #facc15; border: 1px solid #ca8a04; }
-
-    .bar-track {
-      width: 100%;
-      height: 8px;
       background: #090d16;
-      border-radius: 99px;
-      overflow: hidden;
-      border: 1px solid rgba(255,255,255,0.08);
-    }
-
-    .bar-fill {
-      height: 100%;
-      transition: width 0.35s ease;
-    }
-
-    .btn-game {
-      width: 100%;
-      padding: 8px 12px;
-      border: none;
-      border-radius: 8px;
-      font-family: inherit;
-      font-weight: 600;
-      font-size: 0.82rem;
-      cursor: pointer;
-      color: #fff;
-      background: #283252;
-      transition: all 0.15s;
-    }
-    .btn-game:hover { background: #36446e; }
-    .btn-game.primary { background: var(--accent); }
-    .btn-game.primary:hover { background: #4752c4; }
-    .btn-game.gold { background: linear-gradient(135deg, #f59e0b, #d97706); color: #000; font-weight: 700; }
-
-    /* Pokedex Mini Grid */
-    .dex-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
-      gap: 10px;
-      width: 100%;
-      max-width: 1200px;
-      margin: 0 auto;
-    }
-    .dex-slot {
-      background: #121726;
-      border: 1px solid var(--border);
-      border-radius: 10px;
-      padding: 10px;
-      text-align: center;
-      font-size: 0.8rem;
-      opacity: 0.45;
-    }
-    .dex-slot.unlocked {
-      opacity: 1;
-      border-color: #fbbf24;
-      background: rgba(251, 191, 36, 0.07);
-    }
-
-    /* Pokémon Battle & Encounter Scene */
-    .battle-stage {
-      width: 100%;
-      max-width: 820px;
-      margin: auto;
-      background: linear-gradient(180deg, #1e293b 0%, #0f172a 100%);
-      border: 2px solid rgba(255,255,255,0.15);
-      border-radius: 18px;
-      overflow: hidden;
-      box-shadow: 0 20px 60px rgba(0,0,0,0.85);
-      display: flex;
-      flex-direction: column;
-    }
-
-    .battle-field {
-      position: relative;
-      height: 290px;
-      background: linear-gradient(180deg, #38bdf8 0%, #bae6fd 52%, #4ade80 52%, #15803d 100%);
-      padding: 20px 36px;
-      display: flex;
-      flex-direction: column;
-      justify-content: space-between;
-      overflow: hidden;
-    }
-
-    .battle-field.volcano-bg {
-      background: linear-gradient(180deg, #451a03 0%, #9a3412 52%, #7f1d1d 52%, #450a0a 100%);
-    }
-
-    .battle-hud-box {
-      background: rgba(15, 23, 42, 0.92);
-      border: 2px solid #cbd5e1;
-      border-radius: 12px;
-      padding: 10px 16px;
-      width: 260px;
-      color: #fff;
-      box-shadow: 0 8px 20px rgba(0,0,0,0.45);
-      z-index: 5;
-    }
-
-    .sprite-spot-enemy {
-      position: absolute;
-      top: 32px;
-      right: 75px;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      z-index: 4;
-    }
-
-    .sprite-spot-player {
-      position: absolute;
-      bottom: 18px;
-      left: 75px;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      z-index: 4;
-    }
-
-    .ground-pad {
-      width: 130px;
-      height: 36px;
-      background: rgba(0, 0, 0, 0.35);
-      border: 3px solid rgba(255,255,255,0.25);
-      border-radius: 50%;
-      margin-top: -14px;
-    }
-
-    .poke-bounce {
-      font-size: 4.5rem;
-      filter: drop-shadow(0 8px 10px rgba(0,0,0,0.5));
-      animation: floatIdle 1.6s infinite ease-in-out;
-    }
-
-    @keyframes floatIdle {
-      0%, 100% { transform: translateY(0px) scale(1); }
-      50% { transform: translateY(-8px) scale(1.04); }
-    }
-
-    @keyframes shakeBall {
-      0%, 100% { transform: rotate(0deg); }
-      25% { transform: rotate(-22deg); }
-      75% { transform: rotate(22deg); }
-    }
-
-    .ball-shaking {
-      display: inline-block;
-      font-size: 3.5rem;
-      animation: shakeBall 0.45s infinite ease-in-out;
-    }
-
-    .battle-console {
-      background: #0f1422;
-      border-top: 3px solid #334155;
-      padding: 16px 20px;
-      display: grid;
-      grid-template-columns: 1.2fr 1fr;
-      gap: 16px;
-      align-items: center;
-    }
-
-    .dialogue-box {
-      background: #171e31;
-      border: 2px solid #475569;
-      border-radius: 10px;
-      padding: 12px 16px;
-      min-height: 84px;
-      font-size: 0.95rem;
-      line-height: 1.5;
-      color: #f1f5f9;
-      display: flex;
-      align-items: center;
-    }
-
-    .cmd-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 8px;
-    }
-
-    /* Wild Catch Modal Overlay */
-    .encounter-modal {
-      position: fixed;
-      inset: 0;
-      background: rgba(5, 8, 17, 0.88);
-      backdrop-filter: blur(8px);
-      display: none;
-      justify-content: center;
-      align-items: center;
-      z-index: 500;
-      padding: 16px;
-    }
-    .encounter-modal.active { display: flex; }
-
-    /* Non-blocking Toast Alert */
-    #toastContainer {
-      position: fixed;
-      top: 64px;
-      right: 20px;
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-      z-index: 9999;
-      pointer-events: none;
-    }
-
-    .toast {
-      background: rgba(15, 23, 42, 0.95);
-      border-left: 4px solid var(--accent);
-      color: #fff;
-      padding: 10px 16px;
-      border-radius: 8px;
-      font-size: 0.88rem;
-      font-weight: 600;
-      box-shadow: 0 8px 25px rgba(0,0,0,0.6);
-      animation: slideIn 0.2s ease;
-    }
-
-    @keyframes slideIn {
-      from { transform: translateX(40px); opacity: 0; }
-      to { transform: translateX(0); opacity: 1; }
+      cursor: crosshair;
+      touch-action: none;
     }
   </style>
 </head>
 <body>
 
-  <!-- Toast Notifications -->
-  <div id="toastContainer"></div>
-
-  <!-- Top Header -->
-  <header>
-    <div class="brand">
-      <span>✨ SPIRIT POCKET</span>
-      <span class="brand-badge">PRO RPG</span>
-    </div>
-    <div class="hud-stats">
-      <div class="hud-pill" style="color: var(--gold);">💰 <span id="hudGold">150</span> G</div>
-      <div class="hud-pill" style="color: #f87171;">🔴 บอล: <span id="hudBall1">5</span></div>
-      <div class="hud-pill" style="color: #38bdf8;">🔵 เกรทบอล: <span id="hudBall2">1</span></div>
-      <div class="hud-pill" style="color: #c084fc;">🟣 มาสเตอร์: <span id="hudBall3">0</span></div>
-      <div class="hud-pill" style="color: #34d399;">🧪 ยา: <span id="hudPotion">3</span></div>
-    </div>
-  </header>
-
-  <!-- Navigation Tabs -->
-  <nav>
-    <button type="button" class="tab-btn active" id="tabBtn-map">🗺️ แผนที่โลก (World Map)</button>
-    <button type="button" class="tab-btn" id="tabBtn-farm">🏡 ฟาร์ม & สมุดภาพ (<span id="hudPetCount">1</span>)</button>
-    <button type="button" class="tab-btn" id="tabBtn-shop">🎒 ร้านค้า & แต่งตัว (PokéMart)</button>
-    <button type="button" class="tab-btn" id="tabBtn-battle">⚔️ ยิมประลอง (Gym Arena)</button>
-  </nav>
-
-  <!-- Main Content -->
-  <main>
-    <!-- 1. WORLD MAP VIEW -->
-    <section id="view-map" class="view-section active">
-      <div id="stageContainer">
-        <canvas id="gameCanvas" width="1550" height="750"></canvas>
-
-        <div class="map-hud-top">
-          <div class="zone-banner" id="zoneBanner">🌲 ป่าพฤกษาเวทมนตร์ (Mystic Forest)</div>
-          <div class="companion-hud" id="compBanner">🐾 คู่หู: 🔥 Flarekit (Lv.1)</div>
-        </div>
-
-        <div class="map-hint">
-          💡 <b>เดินเหยียบพุ่มหญ้าสีเข้ม</b> เพื่อสุ่มเจอมอนสเตอร์ | <b>เดินชนตัวบนแมพ</b> เพื่อจับทันที | <b>บ่อน้ำพุ ⛲</b> ฟื้นฟู HP ฟรี
-        </div>
-
-        <!-- Custom Gamepad D-Pad -->
-        <div class="dpad-pad">
-          <div></div>
-          <button type="button" class="dpad-key" id="dpad-up">▲</button>
-          <div></div>
-          <button type="button" class="dpad-key" id="dpad-left">◀</button>
-          <div class="dpad-center"></div>
-          <button type="button" class="dpad-key" id="dpad-right">▶</button>
-          <div></div>
-          <button type="button" class="dpad-key" id="dpad-down">▼</button>
-          <div></div>
-        </div>
-      </div>
-    </section>
-
-    <!-- 2. FARM & POKEDEX VIEW -->
-    <section id="view-farm" class="view-section">
-      <div class="panel-scroll">
-        <div class="section-header">
-          <div>
-            <h2>🏡 ฟาร์มสัตว์เลี้ยงของคุณ (Spirit Party)</h2>
-            <p style="font-size: 0.85rem; color: var(--text-muted);">เลือกคู่หูเพื่อพาเดินตามในแผนที่ และลงต่อสู้ในยิมประลอง</p>
-          </div>
-          <button type="button" class="btn-game primary" style="width: auto; padding: 8px 18px;" id="btnHealAll">💖 ฟื้นฟู HP ทั้งฟาร์มฟรี</button>
-        </div>
-
-        <div class="cards-grid" id="farmGrid"></div>
-
-        <div class="section-header" style="margin-top: 12px;">
-          <div>
-            <h3>📖 สมุดภาพมอนสเตอร์ (Spirit Pokédex)</h3>
-            <p style="font-size: 0.82rem; color: var(--text-muted);">รวบรวมให้ครบทั้ง 9 สายพันธุ์จากทั้ง 3 โซน</p>
-          </div>
-          <div style="font-weight: 700; color: var(--gold);" id="dexProgress">ค้นพบแล้ว: 1 / 9</div>
-        </div>
-
-        <div class="dex-grid" id="dexGrid"></div>
-      </div>
-    </section>
-
-    <!-- 3. SHOP & WARDROBE VIEW -->
-    <section id="view-shop" class="view-section">
-      <div class="panel-scroll">
-        <div class="section-header">
-          <div>
-            <h2>🛒 ร้านค้าอุปกรณ์เวทมนตร์ (PokéMart)</h2>
-            <p style="font-size: 0.85rem; color: var(--text-muted);">ซื้อลูกบอลจับมอนสเตอร์ระดับสูงและไอเทมฟื้นฟู</p>
-          </div>
-        </div>
-
-        <div class="cards-grid">
-          <div class="poke-card">
-            <div style="font-size: 3rem;">🔴</div>
-            <b>Spirit Ball (บอลมาตรฐาน)</b>
-            <p style="font-size: 0.8rem; color: var(--text-muted); text-align:center;">โอกาสจับสำเร็จพื้นฐาน (x1.0)</p>
-            <button type="button" class="btn-game gold" onclick="buyShopItem('ball1', 25)">ซื้อ 25 Gold</button>
-          </div>
-          <div class="poke-card">
-            <div style="font-size: 3rem;">🔵</div>
-            <b>Great Orb (เกรทบอล)</b>
-            <p style="font-size: 0.8rem; color: var(--text-muted); text-align:center;">เพิ่มโอกาสจับสำเร็จสูงขึ้น (x1.6)</p>
-            <button type="button" class="btn-game gold" onclick="buyShopItem('ball2', 60)">ซื้อ 60 Gold</button>
-          </div>
-          <div class="poke-card">
-            <div style="font-size: 3rem;">🟣</div>
-            <b>Master Core (มาสเตอร์บอล)</b>
-            <p style="font-size: 0.8rem; color: var(--text-muted); text-align:center;">จับมอนสเตอร์ติด 100% ทุกตัว!</p>
-            <button type="button" class="btn-game gold" onclick="buyShopItem('ball3', 200)">ซื้อ 200 Gold</button>
-          </div>
-          <div class="poke-card">
-            <div style="font-size: 3rem;">🧪</div>
-            <b>Hyper Potion (ยาฟื้นพลัง)</b>
-            <p style="font-size: 0.8rem; color: var(--text-muted); text-align:center;">ฟื้นฟู +60 HP ระหว่างการต่อสู้</p>
-            <button type="button" class="btn-game gold" onclick="buyShopItem('potion', 20)">ซื้อ 20 Gold</button>
-          </div>
-        </div>
-
-        <div class="section-header" style="margin-top: 12px;">
-          <div>
-            <h3>👕 ห้องแต่งตัวเทรนเนอร์ (Trainer Outfits)</h3>
-            <p style="font-size: 0.82rem; color: var(--text-muted);">เปลี่ยนสีหมวกและชุดเทรนเนอร์ของคุณบนแผนที่โลก</p>
-          </div>
-        </div>
-
-        <div class="cards-grid" id="wardrobeGrid"></div>
-      </div>
-    </section>
-
-    <!-- 4. GYM BATTLE ARENA VIEW -->
-    <section id="view-battle" class="view-section">
-      <div class="panel-scroll">
-        <div class="section-header">
-          <div>
-            <h2>⚔️ ลานประลองยิมลีดเดอร์ (Gym Challenge)</h2>
-            <p style="font-size: 0.85rem; color: var(--text-muted);">เลือกคู่ต่อสู้เพื่อประลองชิงเงินรางวัล Gold และค่าประสบการณ์ EXP</p>
-          </div>
-          <div style="display:flex; gap:8px;">
-            <button type="button" class="btn-game primary" style="width:auto;" onclick="selectGymBoss(0)">🌲 ยิมป่า (ง่าย)</button>
-            <button type="button" class="btn-game primary" style="width:auto;" onclick="selectGymBoss(1)">🔥 ยิมลาวา (กลาง)</button>
-            <button type="button" class="btn-game primary" style="width:auto;" onclick="selectGymBoss(2)">👑 แชมเปี้ยนมังกร (ยาก)</button>
-          </div>
-        </div>
-
-        <div class="battle-stage">
-          <div class="battle-field" id="gymBattleField">
-            <!-- Enemy HUD -->
-            <div class="battle-hud-box">
-              <div style="display:flex; justify-content:space-between; font-weight:700;">
-                <span id="gymEnemyName">🌲 ยิมลีดเดอร์ Sylph</span>
-                <span id="gymEnemyLv" style="color:var(--gold);">Lv.3</span>
-              </div>
-              <div class="bar-track" style="margin-top:6px;">
-                <div class="bar-fill" id="gymEnemyHpBar" style="width:100%; background:var(--hp-high);"></div>
-              </div>
-              <div style="font-size:0.75rem; text-align:right; margin-top:3px;" id="gymEnemyHpTxt">120 / 120 HP</div>
-            </div>
-
-            <!-- Enemy Sprite -->
-            <div class="sprite-spot-enemy">
-              <div class="poke-bounce" id="gymEnemyIcon">🦌</div>
-              <div class="ground-pad"></div>
-            </div>
-
-            <!-- Player Sprite -->
-            <div class="sprite-spot-player">
-              <div class="poke-bounce" id="gymPlayerIcon">🦊</div>
-              <div class="ground-pad"></div>
-            </div>
-
-            <!-- Player HUD -->
-            <div class="battle-hud-box" style="align-self: flex-end;">
-              <div style="display:flex; justify-content:space-between; font-weight:700;">
-                <span id="gymPlayerName">Flarekit</span>
-                <span id="gymPlayerLv" style="color:#38bdf8;">Lv.1</span>
-              </div>
-              <div class="bar-track" style="margin-top:6px;">
-                <div class="bar-fill" id="gymPlayerHpBar" style="width:100%; background:var(--hp-high);"></div>
-              </div>
-              <div style="font-size:0.75rem; text-align:right; margin-top:3px;" id="gymPlayerHpTxt">100 / 100 HP</div>
-            </div>
-          </div>
-
-          <div class="battle-console">
-            <div class="dialogue-box" id="gymDialogue">
-              ยินดีต้อนรับสู่ยิมประลอง! เลือกคำสั่งโจมตีเพื่อเริ่มต้นการต่อสู้!
-            </div>
-            <div class="cmd-grid">
-              <button type="button" class="btn-game primary" onclick="executeGymMove('normal')">🐾 พุ่งชน (Tackle)</button>
-              <button type="button" class="btn-game" style="background:#dc2626;" onclick="executeGymMove('element')">✨ ท่าไม้ตายธาตุ</button>
-              <button type="button" class="btn-game" style="background:#059669;" onclick="executeGymMove('potion')">🧪 ใช้ยาฟื้นพลัง</button>
-              <button type="button" class="btn-game" style="background:#475569;" onclick="switchGameTab('map')">🏃 ออกจากการประลอง</button>
-            </div>
-          </div>
-        </div>
-      </div>
-    </section>
-  </main>
-
-  <!-- WILD POKEMON ENCOUNTER MODAL -->
-  <div class="encounter-modal" id="wildModal">
-    <div class="battle-stage" style="max-width: 680px;">
-      <div class="battle-field" id="wildFieldBg" style="height: 250px;">
-        <div class="battle-hud-box">
-          <div style="display:flex; justify-content:space-between; font-weight:700;">
-            <span id="wildName">Wild Spirit</span>
-            <span id="wildTypeBadge" class="type-badge type-Grass">GRASS</span>
-          </div>
-          <div class="bar-track" style="margin-top:6px;">
-            <div class="bar-fill" id="wildHpBar" style="width:100%; background:var(--hp-high);"></div>
-          </div>
-          <div style="font-size:0.75rem; margin-top:4px; color:#cbd5e1;" id="wildRateTxt">โอกาสจับพื้นฐาน: 55% (โจมตีให้เลือดลดเพื่อจับง่ายขึ้น!)</div>
-        </div>
-
-        <div class="sprite-spot-enemy" style="top: 40px; right: 65px;">
-          <div class="poke-bounce" id="wildSprite">🦊</div>
-          <div class="ground-pad"></div>
-        </div>
-
-        <div class="sprite-spot-player" style="bottom: 14px; left: 55px;">
-          <div style="font-size: 3.5rem;" id="wildMySprite">🔥</div>
-          <div class="ground-pad"></div>
-        </div>
-      </div>
-
-      <div class="battle-console">
-        <div class="dialogue-box" id="wildDialogue">
-          มอนสเตอร์ป่าปรากฏตัวออกมาจากพุ่มไม้!
-        </div>
-        <div class="cmd-grid">
-          <button type="button" class="btn-game" style="background:#eab308; color:#000; font-weight:700;" onclick="weakenWildSpirit()">⚔️ โจมตีตัดกำลัง</button>
-          <button type="button" class="btn-game" style="background:#ef4444;" onclick="throwPokeball(1)">🔴 ปาบอล (<span id="wCount1">5</span>)</button>
-          <button type="button" class="btn-game" style="background:#0284c7;" onclick="throwPokeball(2)">🔵 เกรทบอล (<span id="wCount2">1</span>)</button>
-          <button type="button" class="btn-game" style="background:#7c3aed;" onclick="throwPokeball(3)">🟣 มาสเตอร์ (<span id="wCount3">0</span>)</button>
-          <button type="button" class="btn-game" style="grid-column: 1 / -1; background:#334155;" onclick="closeWildEncounter()">🏃 หนีกลับแผนที่</button>
-        </div>
-      </div>
-    </div>
-  </div>
+  <canvas id="gameViewport"></canvas>
 
   <script>
-    // ==========================================
-    // 1. POKEMON SPECIES DATABASE (9 SPECIES)
-    // ==========================================
-    const SPECIES_DB = [
-      { dexId: 1, name: "Leafykit", icon: "🌱", type: "Grass", basePower: 45, zone: "ป่าพฤกษา", rate: 0.65 },
-      { dexId: 2, name: "Mossdeer", icon: "🦌", type: "Grass", basePower: 65, zone: "ป่าพฤกษา", rate: 0.50 },
-      { dexId: 3, name: "TreantKing", icon: "🌳", type: "Grass", basePower: 95, zone: "ป่าพฤกษา", rate: 0.30 },
-      { dexId: 4, name: "Flarekit", icon: "🦊", type: "Fire", basePower: 52, zone: "ภูเขาไฟลาวา", rate: 0.60 },
-      { dexId: 5, name: "MagmaWolf", icon: "🐺", type: "Fire", basePower: 78, zone: "ภูเขาไฟลาวา", rate: 0.45 },
-      { dexId: 6, name: "IgnisPhoenix", icon: "🦅", type: "Fire", basePower: 110, zone: "ภูเขาไฟลาวา", rate: 0.25 },
-      { dexId: 7, name: "Bubbleshell", icon: "🐢", type: "Water", basePower: 48, zone: "บึงศักดิ์สิทธิ์", rate: 0.65 },
-      { dexId: 8, name: "FrostOtter", icon: "🦦", type: "Water", basePower: 72, zone: "บึงศักดิ์สิทธิ์", rate: 0.48 },
-      { dexId: 9, name: "AbyssDragon", icon: "🐉", type: "Water", basePower: 125, zone: "บึงศักดิ์สิทธิ์", rate: 0.20 }
-    ];
+    // =========================================================================
+    // 1. DISCORD SDK & FULLSCREEN VIEWPORT ENGINE (1550x750 VIRTUAL RESOLUTION)
+    // =========================================================================
+    (async function initDiscord() {
+      try {
+        const NS = window.DiscordSDK || window.discordSdk;
+        const Ctor = NS && (NS.DiscordSDK || NS);
+        if (typeof Ctor === "function") {
+          const sdk = new Ctor("1561819450917916842");
+          await sdk.ready();
+        }
+      } catch (e) {}
+    })();
 
-    const OUTFITS = [
-      { id: "red", name: "Red Classic (ชุดเรดโปเกม่อน)", hat: "#ef4444", shirt: "#dc2626", price: 0, owned: true },
-      { id: "blue", name: "Azure Cyber (ชุดบลูเมจ)", hat: "#38bdf8", shirt: "#0284c7", price: 80, owned: false },
-      { id: "emerald", name: "Emerald Ranger (ชุดเรนเจอร์ป่า)", hat: "#10b981", shirt: "#059669", price: 80, owned: false },
-      { id: "royal", name: "Champion Gold (ชุดแชมเปี้ยนทอง)", hat: "#fbbf24", shirt: "#7c3aed", price: 150, owned: false }
-    ];
-
-    // ==========================================
-    // 2. GAME STATE & INITIAL STARTER
-    // ==========================================
-    let gold = 150;
-    let balls = { 1: 5, 2: 1, 3: 0 };
-    let potions = 3;
-    let currentOutfit = OUTFITS[0];
-
-    // มีสัตว์เลี้ยงตัวแรกให้ตั้งแต่เริ่มเกม!
-    let myParty = [
-      {
-        uid: Date.now(),
-        dexId: 4,
-        name: "Flarekit",
-        icon: "🦊",
-        type: "Fire",
-        level: 1,
-        exp: 0,
-        power: 55,
-        hp: 100,
-        maxHp: 100
-      }
-    ];
-    let unlockedDex = new Set([4]);
-    let companionIdx = 0;
-
-    // Non-blocking Toast Message
-    function showToast(msg, color = "#5865f2") {
-      const box = document.getElementById("toastContainer");
-      const el = document.createElement("div");
-      el.className = "toast";
-      el.style.borderLeftColor = color;
-      el.innerText = msg;
-      box.appendChild(el);
-      setTimeout(() => el.remove(), 2600);
-    }
-
-    function updateTopHUD() {
-      document.getElementById("hudGold").innerText = gold;
-      document.getElementById("hudBall1").innerText = balls[1];
-      document.getElementById("hudBall2").innerText = balls[2];
-      document.getElementById("hudBall3").innerText = balls[3];
-      document.getElementById("hudPotion").innerText = potions;
-      document.getElementById("hudPetCount").innerText = myParty.length;
-
-      const comp = myParty[companionIdx];
-      if (comp) {
-        document.getElementById("compBanner").innerText = `🐾 คู่หู: ${comp.icon} ${comp.name} (Lv.${comp.level} | HP ${comp.hp}/${comp.maxHp})`;
-      }
-    }
-
-    // ==========================================
-    // 3. MAP ENGINE (1550x750 -> 31x15 TILES)
-    // ==========================================
-    const canvas = document.getElementById("gameCanvas");
+    const canvas = document.getElementById("gameViewport");
     const ctx = canvas.getContext("2d");
-    const COLS = 31;
-    const ROWS = 15;
-    const TILE = 50;
 
-    // Tile Types:
-    // 0 = Normal Ground, 1 = Tall Grass (สุ่มเจอโปเกม่อน), 3 = Obstacle (Tree/Rock/Coral), 4 = Healing Fountain
-    const worldGrid = [];
-    for (let r = 0; r < ROWS; r++) {
+    // Virtual Resolution ล็อกสัดส่วน 1550 x 750 แนวนอน แต่ขยายเต็มจอดิสคอร์ด 100%
+    const V_WIDTH = 1550;
+    const V_HEIGHT = 750;
+    let scaleX = 1, scaleY = 1, offsetX = 0, offsetY = 0, renderScale = 1;
+
+    function resizeViewport() {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+      const ratioW = canvas.width / V_WIDTH;
+      const ratioH = canvas.height / V_HEIGHT;
+      renderScale = Math.max(ratioW, ratioH); // Cover 100% of screen (Full Bleed)
+      // ใช้ Fit สำหรับ UI ไม่ให้ตกขอบแต่พื้นหลังเต็มจอ
+      scaleX = Math.min(ratioW, ratioH);
+      offsetX = (canvas.width - V_WIDTH * scaleX) / 2;
+      offsetY = (canvas.height - V_HEIGHT * scaleX) / 2;
+    }
+    window.addEventListener("resize", resizeViewport);
+    resizeViewport();
+
+    // =========================================================================
+    // 2. DEEP RPG DATABASE: MOVES, BUFFS, STATUS, EVOLUTION & MONSTERS
+    // =========================================================================
+    const TYPE_CHART = {
+      Fire:     { Grass: 1.6, Ice: 1.6, Water: 0.6, Fire: 0.7, Rock: 0.6 },
+      Water:    { Fire: 1.6, Rock: 1.6, Grass: 0.6, Water: 0.7, Electric: 0.7 },
+      Grass:    { Water: 1.6, Rock: 1.6, Fire: 0.6, Grass: 0.7 },
+      Electric: { Water: 1.6, Grass: 0.7, Rock: 0.5 },
+      Rock:     { Fire: 1.6, Electric: 1.5, Grass: 0.7, Water: 0.7 },
+      Dragon:   { Dragon: 1.6 }
+    };
+
+    const MOVES_DB = {
+      tackle:      { name: "พุ่งชน (Tackle)", type: "Normal", pwr: 40, acc: 100, cat: "phys", desc: "พุ่งชนศัตรูด้วยความเร็ว" },
+      swordsDance: { name: "รำดาบ (War Cry)", type: "Normal", pwr: 0, acc: 100, cat: "buff", stat: "atk", val: 1, desc: "บัฟพลังโจมตีเพิ่มขึ้น +50%" },
+      ironDef:     { name: "เกราะเหล็ก (Iron Wall)", type: "Rock", pwr: 0, acc: 100, cat: "buff", stat: "def", val: 1, desc: "บัฟพลังป้องกันเพิ่มขึ้น +50%" },
+      ember:       { name: "ลูกไฟเวท (Ember)", type: "Fire", pwr: 55, acc: 100, cat: "elem", status: "BRN", chance: 0.3, desc: "ยิงลูกไฟ มีโอกาสติดไฟไหม้ (BRN)" },
+      flameBurst:  { name: "ระเบิดโลกันตร์ (Inferno)", type: "Fire", pwr: 90, acc: 90, cat: "elem", status: "BRN", chance: 0.5, desc: "เปลวเพลิงแรงสูง โอกาสเผาไหม้ 50%" },
+      vineWhip:    { name: "แส้เถาวัลย์ (Vine Whip)", type: "Grass", pwr: 55, acc: 100, cat: "elem", desc: "ฟาดด้วยเถาวัลย์ธาตุพืช" },
+      megaDrain:   { name: "ดูดซับพลัง (Giga Drain)", type: "Grass", pwr: 65, acc: 100, cat: "drain", desc: "โจมตีและฟื้นฟู HP 50% ของดาเมจ" },
+      poisonPowder:{ name: "ผงพิษ (Toxic Spore)", type: "Grass", pwr: 20, acc: 95, cat: "elem", status: "PSN", chance: 0.85, desc: "ทำให้ศัตรูติดพิษ (PSN) ลดเลือดทุกเทิร์น" },
+      waterGun:    { name: "ปืนฉีดน้ำ (Aqua Jet)", type: "Water", pwr: 55, acc: 100, cat: "elem", desc: "ยิงกระสุนน้ำความเร็วสูง" },
+      hydroPump:   { name: "คลื่นยักษ์ (Hydro Vortex)", type: "Water", pwr: 95, acc: 88, cat: "elem", desc: "คลื่นน้ำมหาศาลโจมตีรุนแรง" },
+      thunderWave: { name: "ช็อตไฟฟ้า (Volt Shock)", type: "Electric", pwr: 60, acc: 100, cat: "elem", status: "PAR", chance: 0.45, desc: "ช็อตไฟฟ้า มีโอกาสติดอัมพาต (PAR)" },
+      rockSlide:   { name: "ถล่มหินผา (Rock Slide)", type: "Rock", pwr: 75, acc: 92, cat: "elem", desc: "ทุ่มหินยักษ์ใส่เป้าหมาย" },
+      dragonBreath:{ name: "ลมหายใจมังกร (Draco Breath)", type: "Dragon", pwr: 95, acc: 95, cat: "elem", status: "PAR", chance: 0.35, desc: "ปราณมังกรโบราณทำลายล้างสูง" }
+    };
+
+    const MONSTER_DEX = [
+      { id: 1, name: "Sproutling", icon: "🌱", color: "#22c55e", type: "Grass", hp: 95, atk: 48, def: 45, spd: 50, moves: ["tackle", "vineWhip", "poisonPowder", "megaDrain"], evolveLv: 6, evolveTo: 2 },
+      { id: 2, name: "Sylvanstag", icon: "🦌", color: "#15803d", type: "Grass", hp: 145, atk: 78, def: 70, spd: 75, moves: ["vineWhip", "megaDrain", "swordsDance", "poisonPowder"], evolveLv: 99 },
+      { id: 3, name: "Pyrofox", icon: "🦊", color: "#ef4444", type: "Fire", hp: 90, atk: 58, def: 42, spd: 65, moves: ["tackle", "ember", "swordsDance", "flameBurst"], evolveLv: 6, evolveTo: 4 },
+      { id: 4, name: "Igniswolf", icon: "🐺", color: "#b91c1c", type: "Fire", hp: 140, atk: 92, def: 65, spd: 88, moves: ["ember", "flameBurst", "swordsDance", "tackle"], evolveLv: 99 },
+      { id: 5, name: "Aquashell", icon: "🐢", color: "#38bdf8", type: "Water", hp: 105, atk: 46, def: 62, spd: 42, moves: ["tackle", "waterGun", "ironDef", "hydroPump"], evolveLv: 6, evolveTo: 6 },
+      { id: 6, name: "Tidaldrake", icon: "🐊", color: "#0369a1", type: "Water", hp: 160, atk: 82, def: 88, spd: 65, moves: ["waterGun", "hydroPump", "ironDef", "rockSlide"], evolveLv: 99 },
+      { id: 7, name: "Voltchu", icon: "⚡", color: "#facc15", type: "Electric", hp: 85, atk: 65, def: 40, spd: 95, moves: ["tackle", "thunderWave", "swordsDance", "ember"], evolveLv: 99 },
+      { id: 8, name: "Golemcrag", icon: "🗿", color: "#a8a29e", type: "Rock", hp: 150, atk: 75, def: 95, spd: 35, moves: ["tackle", "rockSlide", "ironDef", "swordsDance"], evolveLv: 99 },
+      { id: 9, name: "AetherDragon", icon: "🐉", color: "#c084fc", type: "Dragon", hp: 210, atk: 110, def: 95, spd: 95, moves: ["dragonBreath", "flameBurst", "hydroPump", "swordsDance"], evolveLv: 99 }
+    ];
+
+    function createMonsterInstance(dexId, level) {
+      const base = MONSTER_DEX.find(m => m.id === dexId) || MONSTER_DEX[0];
+      const mult = 1 + (level - 1) * 0.14;
+      const maxHp = Math.round(base.hp * mult);
+      return {
+        uid: Math.random().toString(36).slice(2),
+        dexId: base.id,
+        name: base.name,
+        icon: base.icon,
+        color: base.color,
+        type: base.type,
+        level: level,
+        exp: 0,
+        nextExp: level * 40,
+        maxHp: maxHp,
+        hp: maxHp,
+        atk: Math.round(base.atk * mult),
+        def: Math.round(base.def * mult),
+        spd: Math.round(base.spd * mult),
+        moves: [...base.moves],
+        status: null, // BRN, PSN, PAR
+        atkStage: 0,
+        defStage: 0
+      };
+    }
+
+    // =========================================================================
+    // 3. WORLD MAP ARCHITECTURE (60x40 TILES = 3000x2000 PX WITH TOWN & ROUTES)
+    // =========================================================================
+    const MAP_COLS = 60;
+    const MAP_ROWS = 40;
+    const TILE = 52;
+
+    // Tile Legend:
+    // 0: Meadow Grass, 1: Tall Grass (Forest), 2: Dirt Road, 3: Tree (Solid),
+    // 4: Water (Solid), 5: Town Brick Pavement, 6: Building Wall (Solid),
+    // 7: Roof Red (PokeCenter), 8: Roof Blue (PokeMart), 9: Roof Gold (Gym),
+    // 10: Door / Warp Trigger, 11: Volcano Ground, 12: Lava Tall Patch (Encounter),
+    // 13: Ice/Lake Ground, 14: Crystal Tall Patch (Encounter), 15: Bridge, 16: Flower
+    const worldMap = [];
+    for (let r = 0; r < MAP_ROWS; r++) {
       const row = [];
-      for (let c = 0; c < COLS; c++) {
-        // Healing Fountain กลางแมพ
-        if (c === 5 && r === 7) { row.push(4); continue; }
-        // ขอบกั้นและต้นไม้
-        if ((c === 2 && r === 2) || (c === 8 && r === 4) || (c === 3 && r === 11) ||
-            (c === 13 && r === 3) || (c === 17 && r === 8) || (c === 14 && r === 12) ||
-            (c === 23 && r === 4) || (c === 27 && r === 9) || (c === 25 && r === 12)) {
+      for (let c = 0; c < MAP_COLS; c++) {
+        // Outer Border Trees
+        if (r === 0 || r === MAP_ROWS - 1 || c === 0 || c === MAP_COLS - 1) {
           row.push(3);
           continue;
         }
-        // พุ่มหญ้าสูง (Tall Grass) สำหรับเดินสุ่มมอนสเตอร์
-        if ((c >= 6 && c <= 9 && r >= 6 && r <= 10) ||
-            (c >= 14 && c <= 17 && r >= 4 && r <= 7) ||
-            (c >= 23 && c <= 26 && r >= 5 && r <= 8)) {
-          row.push(1);
-          continue;
+        // ZONE 1: SUNLEAF TOWN (Cols 1-18, Rows 1-20)
+        if (c <= 18 && r <= 20) {
+          if (c >= 4 && c <= 15 && r >= 5 && r <= 16) row.push(5); // Town Plaza
+          else row.push(0);
         }
-        row.push(0);
+        // ZONE 2: ROUTE 1 FOREST (Cols 1-24, Rows 21-38)
+        else if (c <= 24) {
+          row.push(0);
+        }
+        // RIVER DIVIDER (Cols 25-27)
+        else if (c >= 25 && c <= 27) {
+          if (r >= 17 && r <= 19) row.push(15); // Wooden Bridge
+          else row.push(4);
+        }
+        // ZONE 3: CINDER VOLCANO (Cols 28-43)
+        else if (c <= 43) {
+          row.push(11);
+        }
+        // ZONE 4: AZURE SANCTUARY (Cols 44-58)
+        else {
+          row.push(13);
+        }
       }
-      worldGrid.push(row);
+      worldMap.push(row);
     }
 
-    // Overworld Roaming Spirits
-    let mapSpirits = [];
-    function spawnOverworldSpirits() {
-      const presets = [
-        { dexId: 1, x: 3, y: 4 },
-        { dexId: 2, x: 8, y: 12 },
-        { dexId: 3, x: 9, y: 2 },
-        { dexId: 4, x: 12, y: 9 },
-        { dexId: 5, x: 16, y: 2 },
-        { dexId: 6, x: 19, y: 11 },
-        { dexId: 7, x: 22, y: 8 },
-        { dexId: 8, x: 28, y: 4 },
-        { dexId: 9, x: 29, y: 12 }
-      ];
-      mapSpirits = presets.map((p, idx) => {
-        const sp = SPECIES_DB.find(s => s.dexId === p.dexId);
-        return { ...sp, uid: idx + 100, x: p.x, y: p.y };
-      });
+    // Stamp Buildings in Sunleaf Town
+    function buildStructure(x, y, w, h, roofType) {
+      for (let r = y; r < y + h; r++) {
+        for (let c = x; c < x + w; c++) {
+          if (r === y) worldMap[r][c] = roofType;
+          else worldMap[r][c] = 6;
+        }
+      }
+      worldMap[y + h - 1][x + Math.floor(w / 2)] = 10; // Door
     }
-    spawnOverworldSpirits();
+    buildStructure(5, 4, 4, 3, 7);  // PokéCenter (Door at x:7, y:6)
+    buildStructure(11, 4, 4, 3, 8); // PokéMart (Door at x:13, y:6)
+    buildStructure(8, 12, 5, 3, 9); // Town Gym (Door at x:10, y:14)
 
-    // Player & Follower State
+    // Stamp Encounter Patches & Trees
+    for (let r = 22; r <= 35; r++) {
+      for (let c = 4; c <= 21; c++) {
+        if ((r + c) % 7 === 0) worldMap[r][c] = 3;
+        else if (c >= 6 && c <= 19 && r >= 24 && r <= 33) worldMap[r][c] = 1;
+      }
+    }
+    for (let r = 6; r <= 33; r++) {
+      for (let c = 30; c <= 41; c++) {
+        if ((r * c) % 13 === 0) worldMap[r][c] = 3;
+        else if (c >= 32 && c <= 39 && r >= 10 && r <= 28) worldMap[r][c] = 12;
+      }
+    }
+    for (let r = 6; r <= 33; r++) {
+      for (let c = 46; c <= 56; c++) {
+        if ((r + c) % 9 === 0) worldMap[r][c] = 4;
+        else if (c >= 48 && c <= 55 && r >= 10 && r <= 28) worldMap[r][c] = 14;
+      }
+    }
+
+    // Interactive NPCs & Bosses on Map
+    const NPCS = [
+      { id: "nurse", name: "พยาบาล Joy", x: 7, y: 7, color: "#f472b6", hat: "#fff", role: "HEALER",
+        dialog: "ยินดีต้อนรับสู่ PokéCenter! ฉันได้ฟื้นฟู HP และรักษาสถานะผิดปกติให้มอนสเตอร์ทุกตัวในทีมของคุณเรียบร้อยแล้วค่ะ!" },
+      { id: "mart", name: "พ่อค้า PokéMart", x: 13, y: 7, color: "#38bdf8", hat: "#0284c7", role: "SHOP",
+        dialog: "เชิญเลือกซื้อ Spirit Ball, ยาฟื้นพลัง และไอเทมพัฒนาการได้เลยครับ!" },
+      { id: "guide", name: "ลุงผู้เฒ่า Oak", x: 9, y: 9, color: "#a3e635", hat: "#4d7c0f", role: "TALK",
+        dialog: "เคล็ดลับเทรนเนอร์: ลองเดินลงไปที่ป่าทางใต้เพื่อจับมอนสเตอร์และเก็บเลเวล ถ้าเลเวลถึง Lv.6 มอนสเตอร์จะพัฒนาร่างได้!" },
+      { id: "scout", name: "เทรนเนอร์ Bugsy", x: 14, y: 23, color: "#fbbf24", hat: "#b45309", role: "TRAINER",
+        defeated: false, reward: 120, enemyDex: 1, enemyLv: 3,
+        dialog: "สายตาเราประสานกันแล้ว! มาประลองมอนสเตอร์กันเดี๋ยวนี้!" },
+      { id: "pyro_npc", name: "นักสู้เพลิง Blaze", x: 31, y: 18, color: "#f87171", hat: "#991b1b", role: "TRAINER",
+        defeated: false, reward: 220, enemyDex: 4, enemyLv: 6,
+        dialog: "ข้ามสะพานมาสู่หุบเขาลาวาได้ แปลว่าฝีมือไม่ธรรมดา มาดวลกัน!" },
+      { id: "gym_leader", name: "แชมเปี้ยนยิม Lance", x: 10, y: 15, color: "#c084fc", hat: "#6b21a8", role: "TRAINER",
+        defeated: false, reward: 500, enemyDex: 9, enemyLv: 9,
+        dialog: "ข้าคือแชมเปี้ยนประจำเมือง Sunleaf! จงแสดงพลังสายสัมพันธ์ของเจ้ากับมอนสเตอร์ออกมา!" }
+    ];
+
+    // =========================================================================
+    // 4. PLAYER & GAME STATE
+    // =========================================================================
+    let gameState = "OVERWORLD"; // OVERWORLD, DIALOG, BATTLE, SHOP, PARTY, DEX
+    let gold = 250;
+    let inventory = { ball1: 6, ball2: 2, ball3: 1, potion: 4, superPotion: 1 };
+    let badges = 0;
+
+    let party = [
+      createMonsterInstance(3, 3), // Starter Pyrofox Lv.3
+      createMonsterInstance(1, 2)  // Partner Sproutling Lv.2
+    ];
+    let discoveredDex = new Set([1, 3]);
+
     const player = {
-      x: 4,
-      y: 7,
-      px: 4 * TILE,
-      py: 7 * TILE,
-      tx: 4 * TILE,
-      ty: 7 * TILE,
+      x: 9,
+      y: 8,
+      px: 9 * TILE,
+      py: 8 * TILE,
+      tx: 9 * TILE,
+      ty: 8 * TILE,
       dir: "DOWN",
-      stepFrame: 0,
-      prevX: 3,
+      frame: 0,
+      prevX: 9,
       prevY: 7,
-      compPx: 3 * TILE,
-      compPy: 7 * TILE
+      compPx: 9 * TILE,
+      compPy: 7 * TILE,
+      pathQueue: []
     };
 
-    function getBiomeAt(col) {
-      if (col <= 10) return "FOREST";
-      if (col <= 20) return "VOLCANO";
-      return "LAKE";
+    // Active Dialog & Notification State
+    let dialogState = { title: "", text: "", onFinish: null };
+    let toasts = [];
+    function pushToast(text, color = "#38bdf8") {
+      toasts.push({ text, color, timer: 160 });
     }
 
-    // ==========================================
-    // 4. MOVEMENT & BUG-FREE D-PAD CONTROLS
-    // ==========================================
-    let isEncounterOpen = false;
+    // Active Battle State
+    let battle = null;
 
-    function moveTrainer(dir) {
-      if (isEncounterOpen) return;
+    // =========================================================================
+    // 5. OVERWORLD MOVEMENT & COLLISION
+    // =========================================================================
+    function isSolidTile(c, r) {
+      if (c < 0 || c >= MAP_COLS || r < 0 || r >= MAP_ROWS) return true;
+      const t = worldMap[r][c];
+      if ([3, 4, 6, 7, 8, 9].includes(t)) return true;
+      if (NPCS.some(n => n.x === c && n.y === r)) return true;
+      return false;
+    }
+
+    function stepPlayer(dir) {
+      if (gameState !== "OVERWORLD") return;
       player.dir = dir;
-      player.stepFrame = (player.stepFrame + 1) % 2;
+      player.frame = (player.frame + 1) % 2;
 
       let nx = player.x;
       let ny = player.y;
@@ -1002,676 +313,923 @@
       if (dir === "LEFT") nx--;
       if (dir === "RIGHT") nx++;
 
-      // Boundary & Obstacle Check
-      if (nx < 0 || nx >= COLS || ny < 0 || ny >= ROWS) return;
-      if (worldGrid[ny][nx] === 3) {
-        showToast("🌲 ทางข้างหน้ามีสิ่งกีดขวาง!", "#64748b");
+      // Check NPC Interaction directly in front
+      const npc = NPCS.find(n => n.x === nx && n.y === ny);
+      if (npc) {
+        interactWithNPC(npc);
+        player.pathQueue = [];
         return;
       }
 
-      // Update Follower Previous Tile
+      // Check Building Doors
+      if (worldMap[ny] && worldMap[ny][nx] === 10) {
+        if (nx === 7) interactWithNPC(NPCS[0]);
+        else if (nx === 13) interactWithNPC(NPCS[1]);
+        else if (nx === 10) interactWithNPC(NPCS[5]);
+        player.pathQueue = [];
+        return;
+      }
+
+      if (isSolidTile(nx, ny)) {
+        player.pathQueue = [];
+        return;
+      }
+
       player.prevX = player.x;
       player.prevY = player.y;
-
       player.x = nx;
       player.y = ny;
       player.tx = nx * TILE;
       player.ty = ny * TILE;
 
-      // Zone Banner Update
-      const biome = getBiomeAt(nx);
-      const banner = document.getElementById("zoneBanner");
-      if (biome === "FOREST") banner.innerText = "🌲 ป่าพฤกษาเวทมนตร์ (Mystic Forest)";
-      else if (biome === "VOLCANO") banner.innerText = "🌋 หุบเขาไฟลาวา (Magma Crag)";
-      else banner.innerText = "💧 บึงน้ำศักดิ์สิทธิ์ (Mystic Lake)";
-
-      // Check Healing Fountain
-      if (worldGrid[ny][nx] === 4) {
-        myParty.forEach(p => p.hp = p.maxHp);
-        updateTopHUD();
-        showToast("⛲ น้ำพุศักดิ์สิทธิ์ฟื้นฟู HP สัตว์เลี้ยงเต็ม 100%!", "#10b981");
-        return;
-      }
-
-      // Check Direct Map Boss Encounter
-      const hitIdx = mapSpirits.findIndex(s => s.x === nx && s.y === ny);
-      if (hitIdx !== -1) {
-        const sp = mapSpirits[hitIdx];
-        triggerWildEncounter(sp, hitIdx);
-        return;
-      }
-
-      // Check Tall Grass Random Encounter (30% chance)
-      if (worldGrid[ny][nx] === 1 && Math.random() < 0.30) {
-        const pool = biome === "FOREST" ? [0, 1, 2] : (biome === "VOLCANO" ? [3, 4, 5] : [6, 7, 8]);
-        const pick = SPECIES_DB[pool[Math.floor(Math.random() * pool.length)]];
-        triggerWildEncounter({ ...pick }, -1);
+      // Check Wild Tall Grass Encounter
+      const tile = worldMap[ny][nx];
+      if ([1, 12, 14].includes(tile) && Math.random() < 0.24) {
+        player.pathQueue = [];
+        startWildBattle(tile);
       }
     }
 
-    // Bind D-Pad Buttons with Hold-to-Walk & Zero Focus Bug
-    let holdInterval = null;
-    function bindDpadBtn(btnId, dir) {
-      const btn = document.getElementById(btnId);
-      const startMove = (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        btn.blur();
-        btn.classList.add("pressed");
-        moveTrainer(dir);
-        clearInterval(holdInterval);
-        holdInterval = setInterval(() => moveTrainer(dir), 190);
-      };
-      const stopMove = (e) => {
-        if (e) e.preventDefault();
-        btn.classList.remove("pressed");
-        clearInterval(holdInterval);
-      };
+    function interactFacingTile() {
+      if (gameState === "DIALOG") {
+        const cb = dialogState.onFinish;
+        gameState = "OVERWORLD";
+        if (cb) cb();
+        return;
+      }
+      if (gameState !== "OVERWORLD") return;
 
-      btn.addEventListener("pointerdown", startMove);
-      btn.addEventListener("pointerup", stopMove);
-      btn.addEventListener("pointerleave", stopMove);
-      btn.addEventListener("contextmenu", e => e.preventDefault());
+      let fx = player.x;
+      let fy = player.y;
+      if (player.dir === "UP") fy--;
+      if (player.dir === "DOWN") fy++;
+      if (player.dir === "LEFT") fx--;
+      if (player.dir === "RIGHT") fx++;
+
+      const npc = NPCS.find(n => n.x === fx && n.y === fy);
+      if (npc) interactWithNPC(npc);
     }
 
-    bindDpadBtn("dpad-up", "UP");
-    bindDpadBtn("dpad-down", "DOWN");
-    bindDpadBtn("dpad-left", "LEFT");
-    bindDpadBtn("dpad-right", "RIGHT");
-
-    // Keyboard Controls (Prevent Arrow Scroll Bug!)
-    window.addEventListener("keydown", (e) => {
-      const key = e.key.toLowerCase();
-      if (["arrowup", "arrowdown", "arrowleft", "arrowright", " "].includes(key)) {
-        e.preventDefault(); // ป้องกันหน้าเว็บเลื่อนขึ้นลงเด็ดขาด
-      }
-      if (key === "w" || key === "arrowup") moveTrainer("UP");
-      else if (key === "s" || key === "arrowdown") moveTrainer("DOWN");
-      else if (key === "a" || key === "arrowleft") moveTrainer("LEFT");
-      else if (key === "d" || key === "arrowright") moveTrainer("RIGHT");
-    }, { passive: false });
-
-    // Click-to-Move on Canvas
-    canvas.addEventListener("pointerdown", (e) => {
-      if (isEncounterOpen) return;
-      const rect = canvas.getBoundingClientRect();
-      const clickX = (e.clientX - rect.left) * (canvas.width / rect.width);
-      const clickY = (e.clientY - rect.top) * (canvas.height / rect.height);
-      const gx = Math.floor(clickX / TILE);
-      const gy = Math.floor(clickY / TILE);
-
-      const dx = gx - player.x;
-      const dy = gy - player.y;
-      if (Math.abs(dx) >= Math.abs(dy)) {
-        if (dx > 0) moveTrainer("RIGHT");
-        else if (dx < 0) moveTrainer("LEFT");
+    function interactWithNPC(npc) {
+      if (npc.role === "HEALER") {
+        party.forEach(p => { p.hp = p.maxHp; p.status = null; });
+        pushToast("💖 ฟื้นฟูทีมเต็ม 100%!", "#10b981");
+        openDialog(npc.name, npc.dialog);
+      } else if (npc.role === "SHOP") {
+        openDialog(npc.name, npc.dialog, () => { gameState = "SHOP"; });
+      } else if (npc.role === "TRAINER") {
+        openDialog(npc.name, npc.dialog, () => {
+          startTrainerBattle(npc);
+        });
       } else {
-        if (dy > 0) moveTrainer("DOWN");
-        else if (dy < 0) moveTrainer("UP");
+        openDialog(npc.name, npc.dialog);
       }
-    });
+    }
 
-    // ==========================================
-    // 5. WILD POKEMON ENCOUNTER & CATCH MECHANICS
-    // ==========================================
-    let activeWild = null;
-    let isThrowingBall = false;
+    function openDialog(title, text, onFinish = null) {
+      gameState = "DIALOG";
+      dialogState = { title, text, onFinish };
+    }
 
-    function triggerWildEncounter(spiritObj, mapIndex) {
-      isEncounterOpen = true;
-      isThrowingBall = false;
-      clearInterval(holdInterval);
+    // =========================================================================
+    // 6. BATTLE ENGINE (MOVES, BUFFS, STATUS, CATCH & EVOLUTION)
+    // =========================================================================
+    function startWildBattle(tileType) {
+      let pool = [1, 3, 5, 7];
+      let minLv = 2, maxLv = 4;
+      if (tileType === 12) { pool = [3, 4, 8]; minLv = 4; maxLv = 7; }
+      if (tileType === 14) { pool = [5, 6, 9]; minLv = 6; maxLv = 9; }
 
-      activeWild = {
-        ...spiritObj,
-        hp: 100,
-        maxHp: 100,
-        mapIndex: mapIndex
+      const dexId = pool[Math.floor(Math.random() * pool.length)];
+      const lv = Math.floor(Math.random() * (maxLv - minLv + 1)) + minLv;
+      const enemy = createMonsterInstance(dexId, lv);
+      discoveredDex.add(dexId);
+
+      initBattleState(enemy, true, null);
+    }
+
+    function startTrainerBattle(npc) {
+      const enemy = createMonsterInstance(npc.enemyDex, npc.enemyLv);
+      discoveredDex.add(npc.enemyDex);
+      initBattleState(enemy, false, npc);
+    }
+
+    function initBattleState(enemy, isWild, npcRef) {
+      // Find first alive party member
+      let leadIdx = party.findIndex(p => p.hp > 0);
+      if (leadIdx === -1) {
+        party[0].hp = party[0].maxHp;
+        leadIdx = 0;
+      }
+      party.forEach(p => { p.atkStage = 0; p.defStage = 0; });
+
+      battle = {
+        isWild,
+        npcRef,
+        enemy,
+        playerIdx: leadIdx,
+        menuTab: "MAIN", // MAIN, MOVES, BAG, PARTY
+        log: isWild ? `⚠️ มอนสเตอร์ป่า ${enemy.name} (Lv.${enemy.level}) ปรากฏตัว!` : `⚔️ ${npcRef.name} ส่ง ${enemy.name} (Lv.${enemy.level}) ออกมา!`,
+        busy: false,
+        ballAnim: null
       };
-
-      const modal = document.getElementById("wildModal");
-      const bg = document.getElementById("wildFieldBg");
-      bg.className = "battle-field" + (spiritObj.type === "Fire" ? " volcano-bg" : "");
-
-      document.getElementById("wildName").innerText = `Wild ${spiritObj.name}`;
-      const badge = document.getElementById("wildTypeBadge");
-      badge.className = `type-badge type-${spiritObj.type}`;
-      badge.innerText = spiritObj.type;
-
-      const spEl = document.getElementById("wildSprite");
-      spEl.className = "poke-bounce";
-      spEl.innerText = spiritObj.icon;
-
-      const myComp = myParty[companionIdx] || myParty[0];
-      document.getElementById("wildMySprite").innerText = myComp.icon;
-      document.getElementById("wildDialogue").innerText = `✨ ${spiritObj.name} ป่า (พลัง ${spiritObj.basePower}) ปรากฏตัวออกมา!`;
-
-      refreshWildEncounterHUD();
-      modal.classList.add("active");
+      gameState = "BATTLE";
     }
 
-    function refreshWildEncounterHUD() {
-      if (!activeWild) return;
-      document.getElementById("wildHpBar").style.width = activeWild.hp + "%";
-      document.getElementById("wildHpBar").style.background = activeWild.hp > 50 ? "var(--hp-high)" : (activeWild.hp > 25 ? "var(--hp-mid)" : "var(--hp-low)");
+    function executePlayerMove(moveKey) {
+      if (!battle || battle.busy) return;
+      const pMon = party[battle.playerIdx];
+      const eMon = battle.enemy;
+      const move = MOVES_DB[moveKey];
+      battle.busy = true;
+      battle.menuTab = "MAIN";
 
-      const hpBonus = (100 - activeWild.hp) * 0.0045;
-      const estRate = Math.min(98, Math.round((activeWild.rate + hpBonus) * 100));
-      document.getElementById("wildRateTxt").innerText = `HP: ${activeWild.hp}% | โอกาสจับพื้นฐาน: ~${estRate}%`;
-
-      document.getElementById("wCount1").innerText = balls[1];
-      document.getElementById("wCount2").innerText = balls[2];
-      document.getElementById("wCount3").innerText = balls[3];
-    }
-
-    window.weakenWildSpirit = function() {
-      if (!activeWild || isThrowingBall) return;
-      if (activeWild.hp <= 15) {
-        document.getElementById("wildDialogue").innerText = `⚠️ ${activeWild.name} อ่อนแรงมากแล้ว! รีบปาบอลจับเลย!`;
-        return;
-      }
-      const dmg = Math.floor(Math.random() * 22) + 20;
-      activeWild.hp = Math.max(12, activeWild.hp - dmg);
-      refreshWildEncounterHUD();
-      document.getElementById("wildDialogue").innerText = `⚔️ คู่หูของคุณโจมตีตัดกำลัง! เลือดของ ${activeWild.name} ลดลง ทำให้จับง่ายขึ้นมาก!`;
-    };
-
-    window.throwPokeball = function(ballTier) {
-      if (!activeWild || isThrowingBall) return;
-      if (balls[ballTier] <= 0) {
-        showToast("❌ ลูกบอลชนิดนี้หมดแล้ว! ซื้อเพิ่มได้ที่ร้านค้า", "#ef4444");
+      // Check Paralysis
+      if (pMon.status === "PAR" && Math.random() < 0.25) {
+        battle.log = `⚡ ${pMon.name} ติดอาการชา (PAR) ขยับตัวไม่ได้!`;
+        setTimeout(() => runEnemyTurn(), 1100);
         return;
       }
 
-      balls[ballTier]--;
-      updateTopHUD();
-      refreshWildEncounterHUD();
-      isThrowingBall = true;
+      if (move.cat === "buff") {
+        if (move.stat === "atk") pMon.atkStage = Math.min(3, pMon.atkStage + 1);
+        if (move.stat === "def") pMon.defStage = Math.min(3, pMon.defStage + 1);
+        battle.log = `🔼 ${pMon.name} ใช้ ${move.name}! ${move.desc}`;
+        setTimeout(() => runEnemyTurn(), 1100);
+        return;
+      }
 
-      const ballEmoji = ballTier === 1 ? "🔴" : (ballTier === 2 ? "🔵" : "🟣");
-      const spEl = document.getElementById("wildSprite");
-      spEl.className = "ball-shaking";
-      spEl.innerText = ballEmoji;
+      // Calculate Damage
+      const atkMult = 1 + pMon.atkStage * 0.35 - (pMon.status === "BRN" ? 0.25 : 0);
+      const defMult = 1 + eMon.defStage * 0.35;
+      const typeEff = (TYPE_CHART[move.type] && TYPE_CHART[move.type][eMon.type]) || 1.0;
+      const rawDmg = ((pMon.atk * atkMult * move.pwr) / (eMon.def * defMult * 1.4)) * typeEff;
+      const dmg = Math.max(6, Math.round(rawDmg * (0.9 + Math.random() * 0.2)));
 
-      document.getElementById("wildDialogue").innerText = `${ballEmoji} ปาบอลออกไป... ลูกบอลกำลังสั่น (1... 2... 3...)`;
+      eMon.hp = Math.max(0, eMon.hp - dmg);
+      let effMsg = typeEff > 1.2 ? " (ได้ผลดีเยี่ยม! 🔥)" : (typeEff < 0.8 ? " (ได้ผลไม่ค่อยดี...)" : "");
+      battle.log = `💥 ${pMon.name} ใช้ ${move.name}! ทำดาเมจ ${dmg} HP${effMsg}`;
 
-      const mult = ballTier === 1 ? 1.0 : (ballTier === 2 ? 1.6 : 999);
-      const hpBonus = (100 - activeWild.hp) * 0.0045;
-      const finalChance = (activeWild.rate + hpBonus) * mult;
+      if (move.cat === "drain") {
+        const heal = Math.round(dmg * 0.5);
+        pMon.hp = Math.min(pMon.maxHp, pMon.hp + heal);
+        battle.log += ` (ดูดซับ +${heal} HP)`;
+      }
+
+      if (move.status && !eMon.status && Math.random() < move.chance && eMon.hp > 0) {
+        eMon.status = move.status;
+        battle.log += ` | ศัตรูติดสถานะ [${move.status}]!`;
+      }
 
       setTimeout(() => {
-        if (Math.random() < finalChance) {
-          // จับสำเร็จ!
-          spEl.className = "";
-          spEl.innerText = "🌟";
-          document.getElementById("wildDialogue").innerText = `🎉 ติ๊ง! จับ ${activeWild.name} สำเร็จแล้ว!`;
-          showToast(`🎉 จับ ${activeWild.name} เข้าฟาร์มสำเร็จ! (+25 Gold)`, "#10b981");
-
-          gold += 25;
-          unlockedDex.add(activeWild.dexId);
-          myParty.push({
-            uid: Date.now() + Math.random(),
-            dexId: activeWild.dexId,
-            name: activeWild.name,
-            icon: activeWild.icon,
-            type: activeWild.type,
-            level: 1,
-            exp: 0,
-            power: activeWild.basePower,
-            hp: 100,
-            maxHp: 100
-          });
-
-          if (activeWild.mapIndex !== -1) {
-            mapSpirits.splice(activeWild.mapIndex, 1);
-            // สุ่มเกิดใหม่ถ้าบนแมพเหลือน้อย
-            if (mapSpirits.length < 4) setTimeout(spawnOverworldSpirits, 4000);
-          }
-
-          updateTopHUD();
-          setTimeout(() => closeWildEncounter(), 900);
+        if (eMon.hp <= 0) {
+          handleBattleVictory();
         } else {
-          // ดิ้นหลุด
-          spEl.className = "poke-bounce";
-          spEl.innerText = activeWild.icon;
-          isThrowingBall = false;
-          document.getElementById("wildDialogue").innerText = `💨 อ๊ะ! ${activeWild.name} ดิ้นหลุดออกจากบอล! ลองโจมตีตัดกำลังหรือปาบอลอีกครั้ง!`;
+          runEnemyTurn();
         }
       }, 1150);
-    };
-
-    window.closeWildEncounter = function() {
-      document.getElementById("wildModal").classList.remove("active");
-      isEncounterOpen = false;
-      activeWild = null;
-    };
-
-    // ==========================================
-    // 6. TAB SWITCHING & FARM / SHOP / GYM
-    // ==========================================
-    window.switchGameTab = function(tabName) {
-      ["map", "farm", "shop", "battle"].forEach(t => {
-        document.getElementById("tabBtn-" + t).classList.toggle("active", t === tabName);
-        document.getElementById("view-" + t).classList.toggle("active", t === tabName);
-      });
-      if (tabName === "farm") renderFarmAndDex();
-      if (tabName === "shop") renderWardrobe();
-      if (tabName === "battle") initGymArena();
-    };
-
-    document.getElementById("tabBtn-map").addEventListener("click", () => switchGameTab("map"));
-    document.getElementById("tabBtn-farm").addEventListener("click", () => switchGameTab("farm"));
-    document.getElementById("tabBtn-shop").addEventListener("click", () => switchGameTab("shop"));
-    document.getElementById("tabBtn-battle").addEventListener("click", () => switchGameTab("battle"));
-
-    // Farm & Pokedex Renderer
-    function renderFarmAndDex() {
-      const fg = document.getElementById("farmGrid");
-      fg.innerHTML = myParty.map((pet, i) => `
-        <div class="poke-card ${i === companionIdx ? 'companion-selected' : ''}">
-          <span class="type-badge type-${pet.type}">${pet.type}</span>
-          <div style="font-size: 3.4rem; margin: 4px 0;">${pet.icon}</div>
-          <div style="font-weight: 700; font-size: 1.05rem;">${pet.name} <span style="color:#38bdf8;">Lv.${pet.level}</span></div>
-          <div style="font-size: 0.82rem; color: var(--gold); font-weight: 600;">⚔️ พลังโจมตี: ${pet.power}</div>
-          <div style="width:100%; font-size:0.75rem; display:flex; justify-content:space-between; margin-top:4px;">
-            <span>❤️ HP</span><span>${pet.hp}/${pet.maxHp}</span>
-          </div>
-          <div class="bar-track"><div class="bar-fill" style="width:${(pet.hp/pet.maxHp)*100}%; background:var(--hp-high);"></div></div>
-          <button type="button" class="btn-game" style="margin-top:6px;" onclick="trainPet(${i})">🍒 ป้อนเบอร์รี่อัพเลเวล (15 G)</button>
-          <button type="button" class="btn-game primary" onclick="selectCompanion(${i})">
-            ${i === companionIdx ? '⭐ คู่หูหลักปัจจุบัน' : '🐾 ตั้งเป็นคู่หูเดินตาม'}
-          </button>
-        </div>
-      `).join("");
-
-      // Pokedex
-      document.getElementById("dexProgress").innerText = `ค้นพบแล้ว: ${unlockedDex.size} / ${SPECIES_DB.length}`;
-      const dg = document.getElementById("dexGrid");
-      dg.innerHTML = SPECIES_DB.map(sp => {
-        const has = unlockedDex.has(sp.dexId);
-        return `
-          <div class="dex-slot ${has ? 'unlocked' : ''}">
-            <div style="font-size: 2rem;">${has ? sp.icon : '❓'}</div>
-            <div style="font-weight:700; margin-top:4px;">#${sp.dexId} ${has ? sp.name : '???'}</div>
-            <div style="font-size:0.7rem; color:var(--text-muted);">${sp.zone}</div>
-          </div>
-        `;
-      }).join("");
     }
 
-    window.trainPet = function(idx) {
-      if (gold < 15) {
-        showToast("❌ Gold ไม่พอ! ไปประลองยิมเพื่อหาเงินเพิ่ม", "#ef4444");
+    function runEnemyTurn() {
+      if (!battle) return;
+      const pMon = party[battle.playerIdx];
+      const eMon = battle.enemy;
+
+      // Apply Status Dot on Enemy
+      if (eMon.status === "BRN" || eMon.status === "PSN") {
+        const dot = Math.max(5, Math.round(eMon.maxHp * 0.1));
+        eMon.hp = Math.max(0, eMon.hp - dot);
+        if (eMon.hp <= 0) {
+          battle.log = `☠️ ${eMon.name} พ่ายแพ้จากพิษ/ไฟไหม้!`;
+          setTimeout(() => handleBattleVictory(), 900);
+          return;
+        }
+      }
+
+      const moveKey = eMon.moves[Math.floor(Math.random() * eMon.moves.length)];
+      const move = MOVES_DB[moveKey] || MOVES_DB.tackle;
+
+      if (move.cat === "buff") {
+        eMon.atkStage = Math.min(3, eMon.atkStage + 1);
+        battle.log = `⚠️ ศัตรู ${eMon.name} ใช้ ${move.name} เพิ่มพลังโจมตี!`;
+        battle.busy = false;
         return;
       }
-      gold -= 15;
-      const pet = myParty[idx];
-      pet.level++;
-      pet.power += 12;
-      pet.maxHp += 15;
-      pet.hp = pet.maxHp;
-      updateTopHUD();
-      renderFarmAndDex();
-      showToast(`⬆️ ${pet.name} เลเวลอัพเป็น Lv.${pet.level}! พลังเพิ่มขึ้น!`, "#10b981");
-    };
 
-    window.selectCompanion = function(idx) {
-      companionIdx = idx;
-      updateTopHUD();
-      renderFarmAndDex();
-      showToast(`🐾 ตั้ง ${myParty[idx].name} เป็นคู่หูเดินตามแล้ว!`, "#38bdf8");
-    };
+      const atkMult = 1 + eMon.atkStage * 0.35;
+      const defMult = 1 + pMon.defStage * 0.35;
+      const typeEff = (TYPE_CHART[move.type] && TYPE_CHART[move.type][pMon.type]) || 1.0;
+      const dmg = Math.max(5, Math.round(((eMon.atk * atkMult * move.pwr) / (pMon.def * defMult * 1.55)) * typeEff));
 
-    document.getElementById("btnHealAll").addEventListener("click", () => {
-      myParty.forEach(p => p.hp = p.maxHp);
-      updateTopHUD();
-      renderFarmAndDex();
-      showToast("💖 ฟื้นฟู HP สัตว์เลี้ยงทุกตัวในฟาร์มเรียบร้อย!", "#10b981");
+      pMon.hp = Math.max(0, pMon.hp - dmg);
+      battle.log = `⚡ ศัตรู ${eMon.name} โจมตีด้วย ${move.name} สร้างความเสียหาย ${dmg} HP!`;
+
+      setTimeout(() => {
+        if (pMon.hp <= 0) {
+          const nextAlive = party.findIndex(p => p.hp > 0);
+          if (nextAlive !== -1) {
+            battle.playerIdx = nextAlive;
+            battle.log = `💫 ส่ง ${party[nextAlive].name} ลงสนามแทน!`;
+            battle.busy = false;
+          } else {
+            // Blackout -> Warp to PokeCenter
+            party.forEach(p => { p.hp = p.maxHp; p.status = null; });
+            player.x = 7; player.y = 8; player.px = 7 * TILE; player.py = 8 * TILE; player.tx = 7 * TILE; player.ty = 8 * TILE;
+            gameState = "OVERWORLD";
+            pushToast("🏥 ทีมหมดสติ! พยาบาล Joy ช่วยส่งกลับมารักษาที่เมือง", "#ef4444");
+          }
+        } else {
+          battle.busy = false;
+        }
+      }, 1000);
+    }
+
+    function useBattleItem(itemKey) {
+      if (!battle || battle.busy) return;
+      const pMon = party[battle.playerIdx];
+      const eMon = battle.enemy;
+
+      if (itemKey === "potion" || itemKey === "superPotion") {
+        if (inventory[itemKey] <= 0) { pushToast("❌ ไอเทมหมด!", "#ef4444"); return; }
+        inventory[itemKey]--;
+        const heal = itemKey === "potion" ? 65 : 150;
+        pMon.hp = Math.min(pMon.maxHp, pMon.hp + heal);
+        pMon.status = null;
+        battle.menuTab = "MAIN";
+        battle.busy = true;
+        battle.log = `🧪 ฟื้นฟู +${heal} HP และรักษาสถานะให้ ${pMon.name}!`;
+        setTimeout(() => runEnemyTurn(), 1000);
+        return;
+      }
+
+      // Throw Pokeball
+      if (!battle.isWild) {
+        pushToast("🚫 ไม่สามารถขโมยมอนสเตอร์ของเทรนเนอร์คนอื่นได้!", "#ef4444");
+        return;
+      }
+      if (inventory[itemKey] <= 0) {
+        pushToast("❌ ลูกบอลชนิดนี้หมด! ซื้อเพิ่มที่ PokéMart", "#ef4444");
+        return;
+      }
+
+      inventory[itemKey]--;
+      battle.menuTab = "MAIN";
+      battle.busy = true;
+      const mult = itemKey === "ball1" ? 1.0 : (itemKey === "ball2" ? 1.7 : 999);
+      const hpFactor = (1 - (eMon.hp / eMon.maxHp) * 0.75);
+      const statusBonus = eMon.status ? 0.2 : 0;
+      const chance = (0.45 * hpFactor + statusBonus) * mult;
+
+      battle.ballAnim = { step: 0 };
+      battle.log = `🔴 ปาบอลจับ ${eMon.name}... (บอลกำลังสั่น 1... 2... 3...)`;
+
+      setTimeout(() => {
+        if (Math.random() < chance) {
+          battle.ballAnim = null;
+          party.push({ ...eMon, hp: eMon.maxHp, status: null });
+          discoveredDex.add(eMon.dexId);
+          gold += 35;
+          pushToast(`🎉 จับ ${eMon.name} (Lv.${eMon.level}) สำเร็จ! (+35G)`, "#10b981");
+          gameState = "OVERWORLD";
+          battle = null;
+        } else {
+          battle.ballAnim = null;
+          battle.log = `💨 ${eMon.name} ดิ้นหลุดออกจากลูกบอล! โจมตีให้เลือดลดลงอีกนิด!`;
+          setTimeout(() => runEnemyTurn(), 900);
+        }
+      }, 1250);
+    }
+
+    function handleBattleVictory() {
+      const pMon = party[battle.playerIdx];
+      const eMon = battle.enemy;
+      const expGain = eMon.level * 28;
+      const goldGain = battle.isWild ? eMon.level * 18 : battle.npcRef.reward;
+
+      gold += goldGain;
+      pMon.exp += expGain;
+      let evoMsg = "";
+
+      if (pMon.exp >= pMon.nextExp) {
+        pMon.level++;
+        pMon.exp = 0;
+        pMon.nextExp = pMon.level * 45;
+        pMon.maxHp += 18;
+        pMon.hp = pMon.maxHp;
+        pMon.atk += 9;
+        pMon.def += 8;
+
+        // Check Evolution!
+        const baseSpec = MONSTER_DEX.find(m => m.id === pMon.dexId);
+        if (baseSpec && pMon.level >= baseSpec.evolveLv && baseSpec.evolveTo) {
+          const nextSpec = MONSTER_DEX.find(m => m.id === baseSpec.evolveTo);
+          if (nextSpec) {
+            const oldName = pMon.name;
+            pMon.dexId = nextSpec.id;
+            pMon.name = nextSpec.name;
+            pMon.icon = nextSpec.icon;
+            pMon.color = nextSpec.color;
+            pMon.maxHp += 35;
+            pMon.hp = pMon.maxHp;
+            pMon.atk += 18;
+            discoveredDex.add(nextSpec.id);
+            evoMsg = ` | 🌟 วิวัฒนาการ! ${oldName} แปลงร่างเป็น ${nextSpec.name}!`;
+          }
+        }
+      }
+
+      if (!battle.isWild && battle.npcRef) {
+        if (!battle.npcRef.defeated) {
+          battle.npcRef.defeated = true;
+          badges++;
+        }
+      }
+
+      pushToast(`🏆 ชนะการต่อสู้! +${goldGain}G, +${expGain} EXP${evoMsg}`, "#fbbf24");
+      gameState = "OVERWORLD";
+      battle = null;
+    }
+
+    // =========================================================================
+    // 7. UNIFIED INPUT ENGINE (ZERO-BUG CLICK, TOUCH & KEYBOARD IN DISCORD)
+    // =========================================================================
+    const uiButtons = [];
+    function registerButton(id, x, y, w, h, onClick) {
+      uiButtons.push({ id, x, y, w, h, onClick });
+    }
+
+    function handleGlobalPointer(clientX, clientY) {
+      const vx = (clientX - offsetX) / scaleX;
+      const vy = (clientY - offsetY) / scaleX;
+
+      // 1. Check Registered Canvas UI Buttons First
+      for (let i = uiButtons.length - 1; i >= 0; i--) {
+        const b = uiButtons[i];
+        if (vx >= b.x && vx <= b.x + b.w && vy >= b.y && vy <= b.y + b.h) {
+          b.onClick();
+          return;
+        }
+      }
+
+      // 2. If in Dialog, click anywhere to advance
+      if (gameState === "DIALOG") {
+        interactFacingTile();
+        return;
+      }
+
+      // 3. If in Overworld, Click-to-Move on Map Tile
+      if (gameState === "OVERWORLD") {
+        const camX = Math.max(0, Math.min(MAP_COLS * TILE - V_WIDTH, player.px - V_WIDTH / 2 + TILE / 2));
+        const camY = Math.max(0, Math.min(MAP_ROWS * TILE - V_HEIGHT, player.py - V_HEIGHT / 2 + TILE / 2));
+        const worldClickX = vx + camX;
+        const worldClickY = vy + camY;
+        const targetCol = Math.floor(worldClickX / TILE);
+        const targetRow = Math.floor(worldClickY / TILE);
+
+        const dx = targetCol - player.x;
+        const dy = targetRow - player.y;
+        if (dx === 0 && dy === 0) {
+          interactFacingTile();
+        } else if (Math.abs(dx) >= Math.abs(dy)) {
+          stepPlayer(dx > 0 ? "RIGHT" : "LEFT");
+        } else {
+          stepPlayer(dy > 0 ? "DOWN" : "UP");
+        }
+      }
+    }
+
+    window.addEventListener("pointerdown", (e) => {
+      e.preventDefault();
+      handleGlobalPointer(e.clientX, e.clientY);
+    }, { passive: false });
+
+    const keysHeld = {};
+    window.addEventListener("keydown", (e) => {
+      const k = e.key.toLowerCase();
+      if (["arrowup", "arrowdown", "arrowleft", "arrowright", " ", "enter"].includes(k)) {
+        e.preventDefault();
+      }
+      keysHeld[k] = true;
+
+      if (k === " " || k === "enter" || k === "j") interactFacingTile();
+      if (k === "escape" || k === "k") {
+        if (["SHOP", "PARTY", "DEX"].includes(gameState)) gameState = "OVERWORLD";
+      }
+    }, { passive: false });
+
+    window.addEventListener("keyup", (e) => {
+      keysHeld[e.key.toLowerCase()] = false;
     });
 
-    // Shop & Outfit System
-    window.buyShopItem = function(itemKey, cost) {
-      if (gold < cost) {
-        showToast("❌ Gold ไม่เพียงพอสำหรับซื้อไอเทมนี้!", "#ef4444");
-        return;
-      }
-      gold -= cost;
-      if (itemKey === "ball1") balls[1]++;
-      if (itemKey === "ball2") balls[2]++;
-      if (itemKey === "ball3") balls[3]++;
-      if (itemKey === "potion") potions++;
-      updateTopHUD();
-      showToast("🛒 ซื้อไอเทมเข้ากระเป๋าสำเร็จ!", "#fbbf24");
-    };
+    let moveCooldown = 0;
+    function updateMovementTick() {
+      if (moveCooldown > 0) { moveCooldown--; return; }
+      if (gameState !== "OVERWORLD") return;
 
-    function renderWardrobe() {
-      const wg = document.getElementById("wardrobeGrid");
-      wg.innerHTML = OUTFITS.map((o, idx) => `
-        <div class="poke-card ${currentOutfit.id === o.id ? 'companion-selected' : ''}">
-          <div style="width:52px; height:52px; border-radius:50%; background:${o.shirt}; border:4px solid ${o.hat}; box-shadow: 0 4px 12px rgba(0,0,0,0.5);"></div>
-          <b>${o.name}</b>
-          <button type="button" class="btn-game ${o.owned ? 'primary' : 'gold'}" onclick="equipOrBuyOutfit(${idx})">
-            ${currentOutfit.id === o.id ? '✨ สวมใส่อยู่' : (o.owned ? 'สวมใส่ชุดนี้' : `ปลดล็อก (${o.price} G)`)}
-          </button>
-        </div>
-      `).join("");
+      if (keysHeld["w"] || keysHeld["arrowup"]) { stepPlayer("UP"); moveCooldown = 8; }
+      else if (keysHeld["s"] || keysHeld["arrowdown"]) { stepPlayer("DOWN"); moveCooldown = 8; }
+      else if (keysHeld["a"] || keysHeld["arrowleft"]) { stepPlayer("LEFT"); moveCooldown = 8; }
+      else if (keysHeld["d"] || keysHeld["arrowright"]) { stepPlayer("RIGHT"); moveCooldown = 8; }
     }
 
-    window.equipOrBuyOutfit = function(idx) {
-      const item = OUTFITS[idx];
-      if (!item.owned) {
-        if (gold < item.price) {
-          showToast("❌ Gold ไม่พอปลดล็อกชุดนี้!", "#ef4444");
-          return;
-        }
-        gold -= item.price;
-        item.owned = true;
-        updateTopHUD();
-      }
-      currentOutfit = item;
-      renderWardrobe();
-      showToast(`👕 เปลี่ยนเป็น "${item.name}" แล้ว!`, "#38bdf8");
-    };
-
-    // ==========================================
-    // 7. GYM LEADER BATTLE ARENA
-    // ==========================================
-    const GYM_BOSSES = [
-      { name: "🌲 ยิมลีดเดอร์ Sylph", icon: "🦌", type: "Grass", lv: 3, maxHp: 130, atk: 18, reward: 60 },
-      { name: "🔥 ยิมลีดเดอร์ Vulcan", icon: "🦅", type: "Fire", lv: 6, maxHp: 200, atk: 26, reward: 120 },
-      { name: "👑 แชมเปี้ยน Leviathan", icon: "🐉", type: "Water", lv: 10, maxHp: 320, atk: 36, reward: 250 }
-    ];
-    let currentGymIdx = 0;
-    let gymEnemyHp = 130;
-
-    window.selectGymBoss = function(idx) {
-      currentGymIdx = idx;
-      initGymArena();
-    };
-
-    function initGymArena() {
-      const boss = GYM_BOSSES[currentGymIdx];
-      gymEnemyHp = boss.maxHp;
-
-      const myPet = myParty[companionIdx] || myParty[0];
-      document.getElementById("gymEnemyName").innerText = boss.name;
-      document.getElementById("gymEnemyLv").innerText = `Lv.${boss.lv} (${boss.type})`;
-      document.getElementById("gymEnemyIcon").innerText = boss.icon;
-
-      document.getElementById("gymPlayerName").innerText = myPet.name;
-      document.getElementById("gymPlayerLv").innerText = `Lv.${myPet.level} (${myPet.type})`;
-      document.getElementById("gymPlayerIcon").innerText = myPet.icon;
-
-      document.getElementById("gymDialogue").innerText = `⚔️ ${boss.name} ท้าดวล! ชนะรับรางวัล ${boss.reward} Gold!`;
-      updateGymHpBars();
-    }
-
-    function updateGymHpBars() {
-      const boss = GYM_BOSSES[currentGymIdx];
-      const myPet = myParty[companionIdx] || myParty[0];
-
-      const ePct = Math.max(0, (gymEnemyHp / boss.maxHp) * 100);
-      const pPct = Math.max(0, (myPet.hp / myPet.maxHp) * 100);
-
-      document.getElementById("gymEnemyHpBar").style.width = ePct + "%";
-      document.getElementById("gymEnemyHpTxt").innerText = `${gymEnemyHp} / ${boss.maxHp} HP`;
-
-      document.getElementById("gymPlayerHpBar").style.width = pPct + "%";
-      document.getElementById("gymPlayerHpTxt").innerText = `${myPet.hp} / ${myPet.maxHp} HP`;
-    }
-
-    function getElementMultiplier(atkType, defType) {
-      if (atkType === "Fire" && defType === "Grass") return 1.5;
-      if (atkType === "Grass" && defType === "Water") return 1.5;
-      if (atkType === "Water" && defType === "Fire") return 1.5;
-      if (atkType === defType) return 1.0;
-      return 0.8;
-    }
-
-    window.executeGymMove = function(moveType) {
-      const boss = GYM_BOSSES[currentGymIdx];
-      const myPet = myParty[companionIdx] || myParty[0];
-
-      if (gymEnemyHp <= 0) {
-        initGymArena();
-        return;
-      }
-      if (myPet.hp <= 0) {
-        showToast("💖 สัตว์เลี้ยงหมดสติ! ระบบฟื้นฟูให้อัตโนมัติ", "#f59e0b");
-        myPet.hp = myPet.maxHp;
-        updateGymHpBars();
-        return;
-      }
-
-      if (moveType === "potion") {
-        if (potions <= 0) {
-          showToast("❌ ยาฟื้นพลังหมดแล้ว!", "#ef4444");
-          return;
-        }
-        potions--;
-        myPet.hp = Math.min(myPet.maxHp, myPet.hp + 65);
-        updateTopHUD();
-        updateGymHpBars();
-        document.getElementById("gymDialogue").innerText = `🧪 ใช้ Hyper Potion ฟื้นฟู +65 HP ให้กับ ${myPet.name}!`;
-        return;
-      }
-
-      // Calculate Player Damage
-      let mult = moveType === "element" ? getElementMultiplier(myPet.type, boss.type) : 1.0;
-      let baseDmg = Math.floor(myPet.power * (moveType === "element" ? 0.65 : 0.48)) + Math.floor(Math.random() * 10);
-      let finalDmg = Math.max(10, Math.round(baseDmg * mult));
-
-      gymEnemyHp = Math.max(0, gymEnemyHp - finalDmg);
-      updateGymHpBars();
-
-      let effText = mult > 1.2 ? " (ชนะทางธาตุ รุนแรงมาก! 🔥)" : "";
-      document.getElementById("gymDialogue").innerText = `💥 ${myPet.name} โจมตีสร้างความเสียหาย ${finalDmg} DMG!${effText}`;
-
-      if (gymEnemyHp <= 0) {
-        gold += boss.reward;
-        myPet.level++;
-        myPet.power += 8;
-        myPet.maxHp += 10;
-        myPet.hp = myPet.maxHp;
-        updateTopHUD();
-        document.getElementById("gymDialogue").innerText = `🏆 ชนะเลิศ! ล้ม ${boss.name} ได้รับ +${boss.reward} Gold และ ${myPet.name} เลเวลอัพเป็น Lv.${myPet.level}!`;
-        showToast(`🏆 ชนะยิม! รับ +${boss.reward} Gold!`, "#fbbf24");
-        return;
-      }
-
-      // Boss Counter-attack
-      setTimeout(() => {
-        if (gymEnemyHp <= 0) return;
-        const eDmg = boss.atk + Math.floor(Math.random() * 8);
-        myPet.hp = Math.max(0, myPet.hp - eDmg);
-        updateGymHpBars();
-        updateTopHUD();
-        document.getElementById("gymDialogue").innerText += ` | ⚡ บอสสวนกลับ ${eDmg} DMG!`;
-
-        if (myPet.hp <= 0) {
-          myPet.hp = Math.floor(myPet.maxHp * 0.5);
-          showToast("💫 คู่หูพ่ายแพ้! พักฟื้นที่น้ำพุแล้วลองใหม่นะ", "#ef4444");
-        }
-      }, 420);
-    };
-
-    // ==========================================
-    // 8. 60FPS RICH CANVAS RENDERER
-    // ==========================================
-    function drawTrainerSprite(cx, cy) {
-      const bob = Math.sin(Date.now() * 0.01) * 2;
-
-      // Shadow
+    // =========================================================================
+    // 8. PROCEDURAL PIXEL-STYLE GRAPHICS & UI RENDERING
+    // =========================================================================
+    function drawCharacter(x, y, shirtColor, hatColor, dir, frame, label) {
+      const bob = frame === 1 ? -3 : 0;
       ctx.fillStyle = "rgba(0,0,0,0.45)";
       ctx.beginPath();
-      ctx.ellipse(cx, cy + 18, 14, 6, 0, 0, Math.PI * 2);
+      ctx.ellipse(x + 26, y + 44, 14, 6, 0, 0, Math.PI * 2);
       ctx.fill();
 
-      // Legs (Walking animation)
-      const legOffset = player.stepFrame === 0 ? 3 : -3;
+      // Feet
       ctx.fillStyle = "#1e293b";
-      ctx.fillRect(cx - 8, cy + 8 + (legOffset > 0 ? 2 : 0), 6, 8);
-      ctx.fillRect(cx + 2, cy + 8 + (legOffset < 0 ? 2 : 0), 6, 8);
+      ctx.fillRect(x + 17, y + 34 + (frame ? 2 : 0), 7, 8);
+      ctx.fillRect(x + 28, y + 34 + (!frame ? 2 : 0), 7, 8);
 
-      // Shirt / Body
-      ctx.fillStyle = currentOutfit.shirt;
+      // Body
+      ctx.fillStyle = shirtColor;
       ctx.beginPath();
-      ctx.roundRect(cx - 11, cy - 4 + bob, 22, 15, 5);
+      ctx.roundRect(x + 14, y + 20 + bob, 24, 16, 6);
       ctx.fill();
       ctx.lineWidth = 2;
       ctx.strokeStyle = "#fff";
       ctx.stroke();
 
-      // Head / Face
+      // Head
       ctx.fillStyle = "#fde68a";
       ctx.beginPath();
-      ctx.arc(cx, cy - 10 + bob, 11, 0, Math.PI * 2);
+      ctx.arc(x + 26, y + 14 + bob, 11, 0, Math.PI * 2);
       ctx.fill();
 
-      // Eyes based on direction
-      ctx.fillStyle = "#0f172a";
-      if (player.dir !== "UP") {
-        const ex = player.dir === "LEFT" ? -4 : (player.dir === "RIGHT" ? 4 : 0);
-        ctx.fillRect(cx - 5 + ex, cy - 11 + bob, 3, 4);
-        ctx.fillRect(cx + 2 + ex, cy - 11 + bob, 3, 4);
+      // Eyes
+      if (dir !== "UP") {
+        const ox = dir === "LEFT" ? -3 : (dir === "RIGHT" ? 3 : 0);
+        ctx.fillStyle = "#0f172a";
+        ctx.fillRect(x + 21 + ox, y + 12 + bob, 3, 4);
+        ctx.fillRect(x + 28 + ox, y + 12 + bob, 3, 4);
       }
 
-      // Pokémon Trainer Cap
-      ctx.fillStyle = currentOutfit.hat;
+      // Cap
+      ctx.fillStyle = hatColor;
       ctx.beginPath();
-      ctx.arc(cx, cy - 14 + bob, 11.5, Math.PI, 0);
+      ctx.arc(x + 26, y + 10 + bob, 12, Math.PI, 0);
       ctx.fill();
-      ctx.fillStyle = "#ffffff";
-      ctx.fillRect(cx - 5, cy - 19 + bob, 10, 4);
+
+      if (label) {
+        ctx.font = "700 12px Kanit";
+        ctx.textAlign = "center";
+        ctx.fillStyle = "rgba(0,0,0,0.75)";
+        ctx.fillRect(x + 26 - 45, y - 16, 90, 18);
+        ctx.fillStyle = "#fbbf24";
+        ctx.fillText(label, x + 26, y - 4);
+      }
     }
 
-    function renderLoop() {
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      const time = Date.now() * 0.004;
+    function drawOverworld(camX, camY) {
+      const startCol = Math.max(0, Math.floor(camX / TILE));
+      const endCol = Math.min(MAP_COLS - 1, Math.ceil((camX + V_WIDTH) / TILE));
+      const startRow = Math.max(0, Math.floor(camY / TILE));
+      const endRow = Math.min(MAP_ROWS - 1, Math.ceil((camY + V_HEIGHT) / TILE));
 
-      // 1. Draw Tiles & Biomes
-      for (let r = 0; r < ROWS; r++) {
-        for (let c = 0; c < COLS; c++) {
-          const x = c * TILE;
-          const y = r * TILE;
-          const biome = getBiomeAt(c);
-          const cell = worldGrid[r][c];
-          const isEven = (r + c) % 2 === 0;
+      for (let r = startRow; r <= endRow; r++) {
+        for (let c = startCol; c <= endCol; c++) {
+          const sx = Math.round(c * TILE - camX);
+          const sy = Math.round(r * TILE - camY);
+          const t = worldMap[r][c];
+          const even = (r + c) % 2 === 0;
 
-          if (biome === "FOREST") {
-            ctx.fillStyle = isEven ? "#143829" : "#194533";
-          } else if (biome === "VOLCANO") {
-            ctx.fillStyle = isEven ? "#4c1313" : "#5c1919";
-          } else {
-            ctx.fillStyle = isEven ? "#0b4a6f" : "#0e5885";
-          }
-          ctx.fillRect(x, y, TILE, TILE);
+          // Base Ground
+          if (t === 0 || t === 1 || t === 3) ctx.fillStyle = even ? "#1b4332" : "#23533d";
+          else if (t === 5 || t === 6 || t === 7 || t === 8 || t === 9 || t === 10) ctx.fillStyle = even ? "#475569" : "#52627a";
+          else if (t === 4) ctx.fillStyle = even ? "#0284c7" : "#0369a1";
+          else if (t === 15) ctx.fillStyle = "#92400e";
+          else if (t === 11 || t === 12) ctx.fillStyle = even ? "#451a03" : "#572206";
+          else if (t === 13 || t === 14) ctx.fillStyle = even ? "#0c4a6e" : "#075985";
 
-          // Biome Border Divider
-          if (c === 10 || c === 20) {
-            ctx.fillStyle = "rgba(255,255,255,0.12)";
-            ctx.fillRect(x + TILE - 2, y, 2, TILE);
-          }
+          ctx.fillRect(sx, sy, TILE + 1, TILE + 1);
 
-          // Tall Grass Patch (Pokémon Encounter Grass)
-          if (cell === 1) {
-            ctx.fillStyle = biome === "FOREST" ? "rgba(16, 185, 129, 0.25)" :
-                            (biome === "VOLCANO" ? "rgba(245, 158, 11, 0.22)" : "rgba(56, 189, 248, 0.25)");
-            ctx.fillRect(x + 3, y + 3, TILE - 6, TILE - 6);
-            ctx.font = "18px sans-serif";
+          // Decorations & Buildings
+          if (t === 1) {
+            ctx.fillStyle = "#10b981";
+            ctx.fillRect(sx + 6, sy + 10, 12, 30);
+            ctx.fillRect(sx + 22, sy + 6, 12, 34);
+            ctx.fillRect(sx + 36, sy + 14, 10, 26);
+          } else if (t === 12) {
+            ctx.fillStyle = "#f97316";
+            ctx.beginPath(); ctx.arc(sx + 26, sy + 26, 18, 0, Math.PI * 2); ctx.fill();
+          } else if (t === 14) {
+            ctx.fillStyle = "#38bdf8";
+            ctx.beginPath(); ctx.arc(sx + 26, sy + 26, 18, 0, Math.PI * 2); ctx.fill();
+          } else if (t === 3) {
+            ctx.fillStyle = "#064e3b";
+            ctx.beginPath(); ctx.arc(sx + 26, sy + 24, 22, 0, Math.PI * 2); ctx.fill();
+            ctx.fillStyle = "#10b981";
+            ctx.beginPath(); ctx.arc(sx + 26, sy + 18, 16, 0, Math.PI * 2); ctx.fill();
+          } else if (t === 6) {
+            ctx.fillStyle = "#e2e8f0";
+            ctx.fillRect(sx + 2, sy, TILE - 4, TILE);
+            ctx.fillStyle = "#334155";
+            ctx.fillRect(sx + 14, sy + 12, 24, 18);
+          } else if (t === 7 || t === 8 || t === 9) {
+            ctx.fillStyle = t === 7 ? "#ef4444" : (t === 8 ? "#0284c7" : "#eab308");
+            ctx.fillRect(sx, sy + 4, TILE, TILE - 4);
+            ctx.font = "800 11px Kanit";
+            ctx.fillStyle = "#fff";
             ctx.textAlign = "center";
-            ctx.textBaseline = "middle";
-            ctx.fillText(biome === "FOREST" ? "🌿" : (biome === "VOLCANO" ? "🔥" : "🫧"), x + 25, y + 25);
-          }
-
-          // Obstacles
-          if (cell === 3) {
-            ctx.fillStyle = "rgba(0,0,0,0.35)";
-            ctx.beginPath();
-            ctx.arc(x + 25, y + 28, 18, 0, Math.PI * 2);
-            ctx.fill();
-            ctx.font = "28px sans-serif";
-            ctx.textAlign = "center";
-            ctx.textBaseline = "middle";
-            const obsIcon = biome === "FOREST" ? "🌲" : (biome === "VOLCANO" ? "🪨" : "🪸");
-            ctx.fillText(obsIcon, x + 25, y + 23);
-          }
-
-          // Healing Fountain
-          if (cell === 4) {
-            ctx.fillStyle = "rgba(16, 185, 129, 0.35)";
-            ctx.beginPath();
-            ctx.arc(x + 25, y + 25, 22, 0, Math.PI * 2);
-            ctx.fill();
-            ctx.font = "28px sans-serif";
-            ctx.textAlign = "center";
-            ctx.textBaseline = "middle";
-            ctx.fillText("⛲", x + 25, y + 24);
+            if (t === 7) ctx.fillText("POKÉCENTER", sx + 26, sy + 30);
+            if (t === 8) ctx.fillText("POKÉMART", sx + 26, sy + 30);
+            if (t === 9) ctx.fillText("GYM ARENA", sx + 26, sy + 30);
+          } else if (t === 10) {
+            ctx.fillStyle = "#1e293b";
+            ctx.fillRect(sx + 10, sy + 6, 32, 46);
+            ctx.fillStyle = "#38bdf8";
+            ctx.fillRect(sx + 14, sy + 10, 24, 38);
           }
         }
       }
 
-      // 2. Draw Wild Overworld Spirits (Animated Idle Bounce)
-      ctx.textAlign = "center";
-      ctx.textBaseline = "middle";
-      for (const sp of mapSpirits) {
-        const sx = sp.x * TILE + 25;
-        const sy = sp.y * TILE + 25;
-        const hop = Math.sin(time + sp.uid) * 4;
-
-        ctx.fillStyle = "rgba(0,0,0,0.4)";
-        ctx.beginPath();
-        ctx.ellipse(sx, sy + 16, 12, 5, 0, 0, Math.PI * 2);
-        ctx.fill();
-
-        ctx.font = "28px sans-serif";
-        ctx.fillText(sp.icon, sx, sy + hop);
+      // Draw NPCs
+      for (const npc of NPCS) {
+        const nx = Math.round(npc.x * TILE - camX);
+        const ny = Math.round(npc.y * TILE - camY);
+        drawCharacter(nx, ny, npc.color, npc.hat, "DOWN", 0, npc.name);
       }
 
-      // 3. Draw Companion Follower (Smoothly follows 1 tile behind)
-      const comp = myParty[companionIdx] || myParty[0];
-      if (comp) {
-        const targetCx = player.prevX * TILE;
-        const targetCy = player.prevY * TILE;
-        player.compPx += (targetCx - player.compPx) * 0.25;
-        player.compPy += (targetCy - player.compPy) * 0.25;
-        const cBounce = Math.abs(Math.sin(time * 1.5)) * -5;
-
-        ctx.fillStyle = "rgba(0,0,0,0.35)";
-        ctx.beginPath();
-        ctx.ellipse(player.compPx + 25, player.compPy + 40, 10, 4, 0, 0, Math.PI * 2);
-        ctx.fill();
-
-        ctx.font = "24px sans-serif";
-        ctx.fillText(comp.icon, player.compPx + 25, player.compPy + 26 + cBounce);
+      // Draw Companion Follower
+      const lead = party[0];
+      if (lead) {
+        player.compPx += (player.prevX * TILE - player.compPx) * 0.25;
+        player.compPy += (player.prevY * TILE - player.compPy) * 0.25;
+        const cx = Math.round(player.compPx - camX);
+        const cy = Math.round(player.compPy - camY);
+        ctx.font = "30px sans-serif";
+        ctx.textAlign = "center";
+        ctx.fillText(lead.icon, cx + 26, cy + 38);
       }
 
-      // 4. Draw Player Trainer
-      player.px += (player.tx - player.px) * 0.32;
-      player.py += (player.ty - player.py) * 0.32;
-      drawTrainerSprite(player.px + 25, player.py + 25);
-
-      requestAnimationFrame(renderLoop);
+      // Draw Player
+      player.px += (player.tx - player.px) * 0.35;
+      player.py += (player.ty - player.py) * 0.35;
+      drawCharacter(Math.round(player.px - camX), Math.round(player.py - camY), "#dc2626", "#ef4444", player.dir, player.frame, "YOU");
     }
 
-    updateTopHUD();
-    renderLoop();
+    function drawHUD() {
+      // Top Left Region Banner
+      ctx.fillStyle = "rgba(15, 23, 42, 0.9)";
+      ctx.beginPath(); ctx.roundRect(20, 18, 420, 58, 12); ctx.fill();
+      ctx.strokeStyle = "rgba(255,255,255,0.2)"; ctx.lineWidth = 2; ctx.stroke();
 
-    // ==========================================
-    // 9. DISCORD EMBEDDED SDK INIT
-    // ==========================================
-    (async function initDiscordActivity() {
-      try {
-        const NS = window.DiscordSDK || window.discordSdk;
-        const Ctor = NS && (NS.DiscordSDK || NS);
-        if (typeof Ctor === "function") {
-          const sdk = new Ctor("1561819450917916842");
-          await sdk.ready();
-        }
-      } catch (err) {
-        console.log("Running in standalone browser mode.");
+      let zoneTitle = "🏠 เมืองเริ่มต้น Sunleaf Town";
+      if (player.x > 43) zoneTitle = "❄️ ทะเลสาบศักดิ์สิทธิ์ Azure Sanctuary (Lv.6-9)";
+      else if (player.x > 26) zoneTitle = "🌋 หุบเขาไฟลาวา Cinder Crag (Lv.4-7)";
+      else if (player.y > 20) zoneTitle = "🌲 ป่าพฤกษา Route 1 (Lv.2-4)";
+
+      ctx.font = "700 18px Kanit"; ctx.fillStyle = "#38bdf8"; ctx.textAlign = "left";
+      ctx.fillText(zoneTitle, 36, 44);
+      ctx.font = "600 13px Kanit"; ctx.fillStyle = "#cbd5e1";
+      ctx.fillText(`💰 ${gold} Gold  |  🔴 บอล: ${inventory.ball1}  🔵 เกรท: ${inventory.ball2}  🟣 มาสเตอร์: ${inventory.ball3}  |  🏅 เข็มกลัด: ${badges}`, 36, 66);
+
+      // Top Right In-Game Menu Buttons
+      const menuItems = [
+        { label: "🐾 ทีมมอนสเตอร์", state: "PARTY", x: 1030, color: "#2563eb" },
+        { label: "📖 สมุดภาพ Dex", state: "DEX", x: 1200, color: "#7c3aed" },
+        { label: "🛒 ร้านค้า Mart", state: "SHOP", x: 1370, color: "#d97706" }
+      ];
+      for (const m of menuItems) {
+        ctx.fillStyle = gameState === m.state ? "#10b981" : m.color;
+        ctx.beginPath(); ctx.roundRect(m.x, 18, 155, 48, 10); ctx.fill();
+        ctx.font = "700 15px Kanit"; ctx.fillStyle = "#fff"; ctx.textAlign = "center";
+        ctx.fillText(m.label, m.x + 77, 48);
+        registerButton("menu_" + m.state, m.x, 18, 155, 48, () => {
+          gameState = gameState === m.state ? "OVERWORLD" : m.state;
+        });
       }
-    })();
+
+      // Bottom Left Virtual D-Pad
+      const padX = 40, padY = 540, s = 56;
+      const dirs = [
+        { d: "UP", x: padX + s, y: padY, icon: "▲" },
+        { d: "LEFT", x: padX, y: padY + s, icon: "◀" },
+        { d: "RIGHT", x: padX + s * 2, y: padY + s, icon: "▶" },
+        { d: "DOWN", x: padX + s, y: padY + s * 2, icon: "▼" }
+      ];
+      for (const b of dirs) {
+        ctx.fillStyle = "rgba(15, 23, 42, 0.85)";
+        ctx.beginPath(); ctx.roundRect(b.x, b.y, s - 4, s - 4, 12); ctx.fill();
+        ctx.strokeStyle = "rgba(255,255,255,0.25)"; ctx.stroke();
+        ctx.font = "700 22px sans-serif"; ctx.fillStyle = "#fff"; ctx.textAlign = "center";
+        ctx.fillText(b.icon, b.x + (s - 4) / 2, b.y + 36);
+        registerButton("dpad_" + b.d, b.x, b.y, s - 4, s - 4, () => stepPlayer(b.d));
+      }
+
+      // Bottom Right GameBoy A / B Action Buttons
+      ctx.fillStyle = "#ef4444";
+      ctx.beginPath(); ctx.arc(1450, 640, 38, 0, Math.PI * 2); ctx.fill();
+      ctx.font = "800 20px 'Press Start 2P'"; ctx.fillStyle = "#fff"; ctx.textAlign = "center";
+      ctx.fillText("A", 1450, 648);
+      ctx.font = "600 12px Kanit"; ctx.fillText("คุย / ตกลง", 1450, 695);
+      registerButton("btn_A", 1412, 602, 76, 76, () => interactFacingTile());
+    }
+
+    function drawDialogModal() {
+      ctx.fillStyle = "rgba(10, 14, 26, 0.95)";
+      ctx.beginPath(); ctx.roundRect(220, 520, 1110, 190, 16); ctx.fill();
+      ctx.strokeStyle = "#38bdf8"; ctx.lineWidth = 4; ctx.stroke();
+
+      ctx.font = "800 22px Kanit"; ctx.fillStyle = "#fbbf24"; ctx.textAlign = "left";
+      ctx.fillText("💬 " + dialogState.title, 255, 565);
+
+      ctx.font = "500 20px Kanit"; ctx.fillStyle = "#f8fafc";
+      ctx.fillText(dialogState.text, 255, 615);
+
+      ctx.font = "600 15px Kanit"; ctx.fillStyle = "#38bdf8"; ctx.textAlign = "right";
+      ctx.fillText("▶ คลิกหรือกดปุ่ม [A / Spacebar] เพื่อดำเนินการต่อ...", 1295, 685);
+    }
+
+    function drawBattleScene() {
+      const pMon = party[battle.playerIdx];
+      const eMon = battle.enemy;
+
+      // Arena Backdrop
+      const grad = ctx.createLinearGradient(0, 0, 0, V_HEIGHT);
+      grad.addColorStop(0, "#0f172a");
+      grad.addColorStop(0.65, "#1e293b");
+      grad.addColorStop(1, "#090d16");
+      ctx.fillStyle = grad;
+      ctx.fillRect(0, 0, V_WIDTH, V_HEIGHT);
+
+      // Battle Platforms
+      ctx.fillStyle = "rgba(56, 189, 248, 0.18)";
+      ctx.beginPath(); ctx.ellipse(1120, 290, 170, 55, 0, 0, Math.PI * 2); ctx.fill();
+      ctx.beginPath(); ctx.ellipse(420, 470, 190, 60, 0, 0, Math.PI * 2); ctx.fill();
+
+      // Enemy Status Box
+      ctx.fillStyle = "rgba(15, 23, 42, 0.92)";
+      ctx.beginPath(); ctx.roundRect(140, 60, 430, 115, 14); ctx.fill();
+      ctx.strokeStyle = "#475569"; ctx.lineWidth = 3; ctx.stroke();
+      ctx.font = "800 22px Kanit"; ctx.fillStyle = "#fff"; ctx.textAlign = "left";
+      ctx.fillText(`${eMon.name}  Lv.${eMon.level} ${eMon.status ? '['+eMon.status+']' : ''}`, 165, 98);
+      ctx.font = "600 14px Kanit"; ctx.fillStyle = "#38bdf8";
+      ctx.fillText(`ธาตุ: ${eMon.type}`, 470, 98);
+      // Enemy HP Bar
+      ctx.fillStyle = "#1e293b"; ctx.fillRect(165, 118, 380, 18);
+      ctx.fillStyle = "#10b981"; ctx.fillRect(165, 118, Math.max(0, (eMon.hp / eMon.maxHp) * 380), 18);
+      ctx.font = "600 14px Kanit"; ctx.fillStyle = "#cbd5e1";
+      ctx.fillText(`HP: ${eMon.hp} / ${eMon.maxHp}`, 165, 158);
+
+      // Enemy Sprite or Pokeball Shake
+      ctx.font = "110px sans-serif"; ctx.textAlign = "center";
+      if (battle.ballAnim) {
+        ctx.fillText("🔴", 1120 + Math.sin(Date.now() * 0.03) * 18, 260);
+      } else {
+        ctx.fillText(eMon.icon, 1120, 260 + Math.sin(Date.now() * 0.005) * 8);
+      }
+
+      // Player Sprite & Status Box
+      ctx.font = "120px sans-serif";
+      ctx.fillText(pMon.icon, 420, 440 + Math.sin(Date.now() * 0.006) * 6);
+
+      ctx.fillStyle = "rgba(15, 23, 42, 0.92)";
+      ctx.beginPath(); ctx.roundRect(920, 350, 460, 130, 14); ctx.fill();
+      ctx.strokeStyle = "#38bdf8"; ctx.stroke();
+      ctx.font = "800 22px Kanit"; ctx.fillStyle = "#fff"; ctx.textAlign = "left";
+      ctx.fillText(`${pMon.name}  Lv.${pMon.level} ${pMon.status ? '['+pMon.status+']' : ''}`, 945, 388);
+      ctx.fillStyle = "#1e293b"; ctx.fillRect(945, 405, 410, 18);
+      ctx.fillStyle = "#10b981"; ctx.fillRect(945, 405, Math.max(0, (pMon.hp / pMon.maxHp) * 410), 18);
+      ctx.font = "600 14px Kanit"; ctx.fillStyle = "#cbd5e1";
+      ctx.fillText(`HP: ${pMon.hp}/${pMon.maxHp}   |   EXP: ${pMon.exp}/${pMon.nextExp}   |   ATK+${pMon.atkStage} DEF+${pMon.defStage}`, 945, 448);
+
+      // Bottom Battle Console
+      ctx.fillStyle = "#090d16";
+      ctx.fillRect(0, 520, V_WIDTH, 230);
+      ctx.strokeStyle = "#334155"; ctx.lineWidth = 4;
+      ctx.strokeRect(0, 520, V_WIDTH, 230);
+
+      // Battle Log Left Box
+      ctx.fillStyle = "#111827";
+      ctx.beginPath(); ctx.roundRect(30, 545, 680, 180, 12); ctx.fill();
+      ctx.font = "700 20px Kanit"; ctx.fillStyle = "#f8fafc"; ctx.textAlign = "left";
+      ctx.fillText(battle.log, 55, 635);
+
+      // Right Command Buttons
+      if (battle.menuTab === "MAIN") {
+        const cmds = [
+          { label: "⚔️ โจมตี (FIGHT)", x: 740, y: 545, c: "#dc2626", fn: () => battle.menuTab = "MOVES" },
+          { label: "🎒 กระเป๋า & จับมอนสเตอร์", x: 1135, y: 545, c: "#d97706", fn: () => battle.menuTab = "BAG" },
+          { label: "🐾 สลับมอนสเตอร์", x: 740, y: 645, c: "#2563eb", fn: () => battle.menuTab = "PARTY" },
+          { label: "🏃 หนี (RUN)", x: 1135, y: 645, c: "#475569", fn: () => {
+            if (!battle.isWild) { pushToast("🚫 หนีจากการดวลเทรนเนอร์ไม่ได้!", "#ef4444"); return; }
+            gameState = "OVERWORLD"; battle = null;
+          }}
+        ];
+        for (const b of cmds) {
+          ctx.fillStyle = b.c;
+          ctx.beginPath(); ctx.roundRect(b.x, b.y, 375, 80, 12); ctx.fill();
+          ctx.font = "800 20px Kanit"; ctx.fillStyle = "#fff"; ctx.textAlign = "center";
+          ctx.fillText(b.label, b.x + 187, b.y + 48);
+          registerButton("bcmd_" + b.label, b.x, b.y, 375, 80, b.fn);
+        }
+      } else if (battle.menuTab === "MOVES") {
+        pMon.moves.forEach((mKey, idx) => {
+          const mv = MOVES_DB[mKey];
+          const bx = idx % 2 === 0 ? 740 : 1135;
+          const by = idx < 2 ? 545 : 645;
+          ctx.fillStyle = "#1e293b";
+          ctx.beginPath(); ctx.roundRect(bx, by, 375, 80, 12); ctx.fill();
+          ctx.strokeStyle = "#38bdf8"; ctx.lineWidth = 2; ctx.stroke();
+          ctx.font = "700 18px Kanit"; ctx.fillStyle = "#fff"; ctx.textAlign = "left";
+          ctx.fillText(`${mv.name} [${mv.type}]`, bx + 18, by + 34);
+          ctx.font = "500 13px Kanit"; ctx.fillStyle = "#94a3b8";
+          ctx.fillText(mv.desc, bx + 18, by + 60);
+          registerButton("mv_" + idx, bx, by, 375, 80, () => executePlayerMove(mKey));
+        });
+      } else if (battle.menuTab === "BAG") {
+        const items = [
+          { k: "ball1", name: `🔴 Spirit Ball (${inventory.ball1})`, x: 740, y: 545 },
+          { k: "ball2", name: `🔵 Great Orb (${inventory.ball2})`, x: 1135, y: 545 },
+          { k: "ball3", name: `🟣 Master Core (${inventory.ball3})`, x: 740, y: 645 },
+          { k: "potion", name: `🧪 ยาฟื้นพลัง +65HP (${inventory.potion})`, x: 1135, y: 645 }
+        ];
+        items.forEach(it => {
+          ctx.fillStyle = "#1e293b";
+          ctx.beginPath(); ctx.roundRect(it.x, it.y, 375, 80, 12); ctx.fill();
+          ctx.font = "700 18px Kanit"; ctx.fillStyle = "#fbbf24"; ctx.textAlign = "center";
+          ctx.fillText(it.name, it.x + 187, it.y + 46);
+          registerButton("bag_" + it.k, it.x, it.y, 375, 80, () => useBattleItem(it.k));
+        });
+      } else if (battle.menuTab === "PARTY") {
+        party.slice(0, 4).forEach((mon, idx) => {
+          const bx = idx % 2 === 0 ? 740 : 1135;
+          const by = idx < 2 ? 545 : 645;
+          ctx.fillStyle = "#1e293b";
+          ctx.beginPath(); ctx.roundRect(bx, by, 375, 80, 12); ctx.fill();
+          ctx.font = "700 18px Kanit"; ctx.fillStyle = "#fff"; ctx.textAlign = "left";
+          ctx.fillText(`${mon.icon} ${mon.name} Lv.${mon.level} (${mon.hp}/${mon.maxHp} HP)`, bx + 20, by + 46);
+          registerButton("sw_" + idx, bx, by, 375, 80, () => {
+            if (mon.hp <= 0) { pushToast("❌ ตัวนี้หมดสติอยู่!", "#ef4444"); return; }
+            battle.playerIdx = idx;
+            battle.menuTab = "MAIN";
+            battle.log = `🐾 ส่ง ${mon.name} ลงสนาม!`;
+          });
+        });
+      }
+    }
+
+    function drawOverlayModal(title, renderContentFn) {
+      ctx.fillStyle = "rgba(6, 9, 16, 0.92)";
+      ctx.fillRect(90, 85, 1370, 610);
+      ctx.strokeStyle = "#38bdf8"; ctx.lineWidth = 3;
+      ctx.strokeRect(90, 85, 1370, 610);
+
+      ctx.font = "800 26px Kanit"; ctx.fillStyle = "#fbbf24"; ctx.textAlign = "left";
+      ctx.fillText(title, 130, 138);
+
+      // Close Button
+      ctx.fillStyle = "#ef4444";
+      ctx.beginPath(); ctx.roundRect(1310, 102, 120, 44, 8); ctx.fill();
+      ctx.font = "700 16px Kanit"; ctx.fillStyle = "#fff"; ctx.textAlign = "center";
+      ctx.fillText("✖ ปิดหน้าต่าง", 1370, 130);
+      registerButton("close_modal", 1310, 102, 120, 44, () => gameState = "OVERWORLD");
+
+      renderContentFn();
+    }
+
+    function drawPartyWindow() {
+      drawOverlayModal("🐾 ทีมมอนสเตอร์ของคุณ (คลิกเพื่อตั้งเป็นตัวนำทีม / ฝึกฝน)", () => {
+        party.forEach((mon, i) => {
+          const x = 130 + (i % 3) * 430;
+          const y = 175 + Math.floor(i / 3) * 230;
+          ctx.fillStyle = i === 0 ? "#1e293b" : "#111827";
+          ctx.beginPath(); ctx.roundRect(x, y, 400, 205, 14); ctx.fill();
+          ctx.strokeStyle = i === 0 ? "#10b981" : "#334155"; ctx.stroke();
+
+          ctx.font = "54px sans-serif"; ctx.textAlign = "left";
+          ctx.fillText(mon.icon, x + 20, y + 70);
+          ctx.font = "800 20px Kanit"; ctx.fillStyle = "#fff";
+          ctx.fillText(`${mon.name} Lv.${mon.level}`, x + 95, y + 45);
+          ctx.font = "600 14px Kanit"; ctx.fillStyle = "#38bdf8";
+          ctx.fillText(`ธาตุ: ${mon.type} | HP: ${mon.hp}/${mon.maxHp} | ATK: ${mon.atk} DEF: ${mon.def}`, x + 95, y + 72);
+
+          // Set Lead Button
+          ctx.fillStyle = "#2563eb";
+          ctx.beginPath(); ctx.roundRect(x + 20, y + 145, 170, 42, 8); ctx.fill();
+          ctx.font = "700 14px Kanit"; ctx.fillStyle = "#fff"; ctx.textAlign = "center";
+          ctx.fillText(i === 0 ? "⭐ ตัวนำทีม" : "ตั้งเป็นตัวนำ", x + 105, y + 171);
+          registerButton("lead_" + i, x + 20, y + 145, 170, 42, () => {
+            const temp = party[0]; party[0] = party[i]; party[i] = temp;
+            pushToast(`🐾 ตั้ง ${party[0].name} เป็นตัวนำทีมแล้ว!`);
+          });
+
+          // Train Level Up Button
+          ctx.fillStyle = "#d97706";
+          ctx.beginPath(); ctx.roundRect(x + 205, y + 145, 175, 42, 8); ctx.fill();
+          ctx.fillStyle = "#fff";
+          ctx.fillText("🍒 ฝึกฝน (40G)", x + 292, y + 171);
+          registerButton("train_" + i, x + 205, y + 145, 175, 42, () => {
+            if (gold < 40) { pushToast("❌ Gold ไม่พอ (ต้องการ 40G)", "#ef4444"); return; }
+            gold -= 40;
+            mon.level++; mon.maxHp += 15; mon.hp = mon.maxHp; mon.atk += 8; mon.def += 6;
+            pushToast(`⬆️ ${mon.name} เลเวลอัพเป็น Lv.${mon.level}!`, "#10b981");
+          });
+        });
+      });
+    }
+
+    function drawShopWindow() {
+      drawOverlayModal(`🛒 ร้านค้า PokéMart (เงินของคุณ: ${gold} Gold)`, () => {
+        const goods = [
+          { k: "ball1", name: "🔴 Spirit Ball", cost: 25, desc: "ลูกบอลมาตรฐานสำหรับจับมอนสเตอร์ป่า" },
+          { k: "ball2", name: "🔵 Great Orb", cost: 65, desc: "โอกาสจับสำเร็จสูงกว่าปกติ 1.7 เท่า" },
+          { k: "ball3", name: "🟣 Master Core", cost: 220, desc: "ลูกบอลในตำนาน จับมอนสเตอร์ติด 100%" },
+          { k: "potion", name: "🧪 Hyper Potion", cost: 30, desc: "ฟื้นฟู +65 HP และรักษาสถานะผิดปกติ" }
+        ];
+        goods.forEach((g, i) => {
+          const x = 130 + (i % 2) * 640;
+          const y = 185 + Math.floor(i / 2) * 210;
+          ctx.fillStyle = "#161f33";
+          ctx.beginPath(); ctx.roundRect(x, y, 600, 180, 14); ctx.fill();
+          ctx.font = "800 22px Kanit"; ctx.fillStyle = "#fbbf24"; ctx.textAlign = "left";
+          ctx.fillText(`${g.name}  —  ราคา ${g.cost} Gold`, x + 28, y + 52);
+          ctx.font = "500 16px Kanit"; ctx.fillStyle = "#cbd5e1";
+          ctx.fillText(g.desc, x + 28, y + 90);
+
+          ctx.fillStyle = "#10b981";
+          ctx.beginPath(); ctx.roundRect(x + 28, y + 115, 200, 44, 8); ctx.fill();
+          ctx.font = "700 16px Kanit"; ctx.fillStyle = "#fff"; ctx.textAlign = "center";
+          ctx.fillText("🛒 ซื้อไอเทม 1 ชิ้น", x + 128, y + 143);
+          registerButton("buy_" + g.k, x + 28, y + 115, 200, 44, () => {
+            if (gold < g.cost) { pushToast("❌ Gold ไม่พอ!", "#ef4444"); return; }
+            gold -= g.cost; inventory[g.k]++;
+            pushToast(`✅ ซื้อ ${g.name} สำเร็จ!`, "#10b981");
+          });
+        });
+      });
+    }
+
+    function drawDexWindow() {
+      drawOverlayModal(`📖 สมุดภาพมอนสเตอร์ (ค้นพบแล้ว ${discoveredDex.size} / ${MONSTER_DEX.length} สายพันธุ์)`, () => {
+        MONSTER_DEX.forEach((m, i) => {
+          const has = discoveredDex.has(m.id);
+          const x = 130 + (i % 3) * 430;
+          const y = 175 + Math.floor(i / 3) * 155;
+          ctx.fillStyle = has ? "#17253b" : "#0f1420";
+          ctx.beginPath(); ctx.roundRect(x, y, 400, 135, 12); ctx.fill();
+          ctx.font = "46px sans-serif"; ctx.textAlign = "left";
+          ctx.fillText(has ? m.icon : "❓", x + 20, y + 80);
+          ctx.font = "800 19px Kanit"; ctx.fillStyle = has ? "#fff" : "#64748b";
+          ctx.fillText(`#0${m.id}  ${has ? m.name : "???"}`, x + 90, y + 50);
+          ctx.font = "500 14px Kanit"; ctx.fillStyle = "#38bdf8";
+          ctx.fillText(has ? `ธาตุ: ${m.type} | Base HP: ${m.hp} ATK: ${m.atk}` : "ยังไม่ได้ค้นพบในธรรมชาติ", x + 90, y + 82);
+        });
+      });
+    }
+
+    // =========================================================================
+    // 9. MASTER GAME LOOP
+    // =========================================================================
+    function gameLoop() {
+      updateMovementTick();
+      uiButtons.length = 0;
+
+      ctx.save();
+      ctx.fillStyle = "#06080e";
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      ctx.translate(offsetX, offsetY);
+      ctx.scale(scaleX, scaleX);
+
+      if (gameState === "BATTLE" && battle) {
+        drawBattleScene();
+      } else {
+        const camX = Math.max(0, Math.min(MAP_COLS * TILE - V_WIDTH, player.px - V_WIDTH / 2 + TILE / 2));
+        const camY = Math.max(0, Math.min(MAP_ROWS * TILE - V_HEIGHT, player.py - V_HEIGHT / 2 + TILE / 2));
+        drawOverworld(camX, camY);
+        drawHUD();
+
+        if (gameState === "DIALOG") drawDialogModal();
+        if (gameState === "PARTY") drawPartyWindow();
+        if (gameState === "SHOP") drawShopWindow();
+        if (gameState === "DEX") drawDexWindow();
+      }
+
+      // Draw Toast Alerts
+      for (let i = toasts.length - 1; i >= 0; i--) {
+        const t = toasts[i];
+        t.timer--;
+        ctx.fillStyle = "rgba(15, 23, 42, 0.95)";
+        ctx.beginPath(); ctx.roundRect(V_WIDTH / 2 - 260, 85 + i * 50, 520, 42, 10); ctx.fill();
+        ctx.strokeStyle = t.color; ctx.lineWidth = 2; ctx.stroke();
+        ctx.font = "700 16px Kanit"; ctx.fillStyle = "#fff"; ctx.textAlign = "center";
+        ctx.fillText(t.text, V_WIDTH / 2, 112 + i * 50);
+        if (t.timer <= 0) toasts.splice(i, 1);
+      }
+
+      ctx.restore();
+      requestAnimationFrame(gameLoop);
+    }
+
+    gameLoop();
   </script>
 </body>
 </html>
