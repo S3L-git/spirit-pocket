@@ -167,11 +167,13 @@
 
     canvas {
       image-rendering: pixelated;
-      width: min(98vw, calc(92vh * (1550 / 750)));
-      height: min(calc(98vw * (750 / 1550)), 92vh);
-      aspect-ratio: 1550 / 750;
+      width: 100% !important;
+      max-width: 1550px !important;
+      aspect-ratio: 1550 / 750 !important;
+      height: auto !important;
+      max-height: calc(100vh - 120px) !important;
       background: #0f172a;
-      border: 2px solid rgba(255, 255, 255, 0.12);
+      border: 2px solid rgba(255, 255, 255, 0.15);
       border-radius: 12px;
       box-shadow: 0 10px 40px rgba(0, 0, 0, 0.9);
       cursor: crosshair;
