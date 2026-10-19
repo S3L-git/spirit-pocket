@@ -2,151 +2,415 @@
 <html lang="th">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Spirit Pocket</title>
-  <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;600&family=Press+Start+2P&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;600;700&family=Press+Start+2P&display=swap" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/@discord/embedded-app-sdk@1.0.0/dist/umd/index.js"></script>
+  <!-- Fallback: ถ้า UMD โหลดไม่ได้หรือ module/import ล้มเหลว เกมต้องยังเล่น offline ได้ -->
+  <script>
+    // ---- Fallback movement (non-module) — ใช้เฉพาะตอน module ยังไม่พร้อม ----
+    // ตัวจริงใน <script type="module"> จะมา override window.move / switchTab ทีหลัง
+    window.__spModuleReady = false;
+    if (!window.move) {
+      window.move = function () { if (!window.__spModuleReady) console.log('Game module loading...'); };
+    }
+    if (!window.switchTab) {
+      window.switchTab = function (tabName) {
+        document.querySelectorAll(".tab-btn").forEach(btn => btn.classList.remove("active"));
+        document.querySelectorAll(".view-section").forEach(sec => sec.classList.remove("active"));
+        var map = { map: 0, farm: 1, battle: 2 };
+        var btns = document.querySelectorAll(".tab-btn");
+        if (btns[map[tabName]] !== undefined) btns[map[tabName]].classList.add("active");
+        var sec = document.getElementById("view-" + tabName);
+        if (sec) sec.classList.add("active");
+      };
+    }
+    if (!window.battleAction) { window.battleAction = function () {}; }
+    if (!window.closeCatchModal) {
+      window.closeCatchModal = function () {
+        var m = document.getElementById("catchModal");
+        if (m) m.classList.remove("active");
+      };
+    }
+    if (!window.attemptCatch) { window.attemptCatch = function () {}; }
+  </script>
   <style>
     :root {
-      --bg-dark: #0f111a;
-      --card-bg: #1a1d2d;
-      --accent-color: #5865f2;
-      --text-main: #f0f2f5;
+      --bg-dark: #090a10;
+      --card-bg: #141724;
+      --card-inner: #1e2238;
+      --accent: #5865f2;
+      --accent-hover: #4752c4;
       --gold: #f59e0b;
-      --ball: #8b5cf6;
+      --ball: #a855f7;
+      --hp: #10b981;
+      --danger: #ef4444;
+      --text: #f8fafc;
+      --text-muted: #94a3b8;
     }
 
     * {
       box-sizing: border-box;
       margin: 0;
       padding: 0;
+      -webkit-user-select: none;
       user-select: none;
+      -webkit-tap-highlight-color: transparent;
     }
 
     body {
       background-color: var(--bg-dark);
-      color: var(--text-main);
+      color: var(--text);
       font-family: 'Kanit', sans-serif;
-      min-height: 100vh;
+      width: 100vw;
+      height: 100vh;
       display: flex;
       flex-direction: column;
-      align-items: center;
-      overflow-x: hidden;
+      overflow: hidden;
     }
 
-    /* Header Nav */
+    /* Top Bar */
     header {
       width: 100%;
-      max-width: 900px;
-      padding: 14px 20px;
+      height: 52px;
+      padding: 0 16px;
       display: flex;
       justify-content: space-between;
       align-items: center;
-      background: rgba(26, 29, 45, 0.7);
-      backdrop-filter: blur(12px);
+      background: rgba(20, 23, 36, 0.95);
+      -webkit-backdrop-filter: blur(10px);
+      backdrop-filter: blur(10px);
       border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-      position: sticky;
-      top: 0;
-      z-index: 50;
+      flex-shrink: 0;
+      z-index: 100;
     }
 
     .brand {
       display: flex;
       align-items: center;
-      gap: 10px;
-      font-weight: 600;
-      font-size: 1.25rem;
-      color: #fff;
+      gap: 8px;
+      font-weight: 700;
+      font-size: 1.1rem;
+      background: linear-gradient(135deg, #a855f7, #38bdf8);
+      -webkit-background-clip: text;
+      background-clip: text;
+      -webkit-text-fill-color: transparent;
+      color: transparent;
     }
 
     .stats {
       display: flex;
-      gap: 16px;
-      font-size: 0.95rem;
+      gap: 10px;
+      font-size: 0.85rem;
       font-weight: 600;
     }
 
-    .stat-badge {
+    .badge {
       display: flex;
       align-items: center;
-      gap: 6px;
-      background: rgba(0, 0, 0, 0.35);
-      padding: 6px 14px;
-      border-radius: 999px;
-      border: 1px solid rgba(255, 255, 255, 0.05);
+      gap: 5px;
+      background: rgba(0, 0, 0, 0.4);
+      padding: 4px 10px;
+      border-radius: 20px;
+      border: 1px solid rgba(255, 255, 255, 0.06);
     }
+    .badge-gold { color: var(--gold); }
+    .badge-balls { color: var(--ball); }
 
-    .stat-gold { color: var(--gold); }
-    .stat-balls { color: var(--ball); }
-
-    /* Tab Buttons */
-    .tabs {
+    /* Navigation Bar */
+    nav {
       display: flex;
+      background: var(--card-bg);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+      flex-shrink: 0;
+      padding: 4px 12px;
       gap: 8px;
-      margin: 16px 0;
-      background: rgba(0, 0, 0, 0.25);
-      padding: 4px;
-      border-radius: 12px;
-      border: 1px solid rgba(255, 255, 255, 0.05);
     }
 
     .tab-btn {
+      flex: 1;
+      padding: 8px 12px;
       background: transparent;
       border: none;
-      color: #94a3b8;
-      padding: 8px 18px;
+      color: var(--text-muted);
       font-family: inherit;
-      font-size: 0.9rem;
-      font-weight: 500;
+      font-size: 0.85rem;
+      font-weight: 600;
       border-radius: 8px;
       cursor: pointer;
-      transition: all 0.2s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      transition: all 0.2s;
     }
 
     .tab-btn.active {
-      background: var(--accent-color);
+      background: var(--accent);
       color: #fff;
       box-shadow: 0 4px 12px rgba(88, 101, 242, 0.35);
     }
 
-    /* Game Stage */
-    .game-container {
+    /* Main Content Viewports */
+    main {
+      flex: 1;
       position: relative;
-      background: var(--card-bg);
-      border-radius: 16px;
-      padding: 16px;
-      border: 2px solid rgba(255, 255, 255, 0.08);
-      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5);
+      overflow: hidden;
       display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .view-section {
+      position: absolute;
+      inset: 0;
+      display: none;
       flex-direction: column;
+      overflow-y: auto;
+      padding: 12px;
+    }
+
+    .view-section.active {
+      display: flex;
+    }
+
+    /* Map Tab Styles */
+    #view-map {
+      padding: 0;
+      display: none;
+      justify-content: center;
+      align-items: center;
+      background: #000;
+      position: relative;
+    }
+    #view-map.active { display: flex; }
+
+    #canvasWrapper {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      display: flex;
+      justify-content: center;
       align-items: center;
     }
 
     canvas {
       image-rendering: pixelated;
-      border-radius: 12px;
-      background: #141724;
-      display: block;
+      box-shadow: 0 0 30px rgba(0,0,0,0.8);
+      max-width: 100%;
+      max-height: 100%;
+      aspect-ratio: 1 / 1;
     }
 
-    /* On-Screen Controller for Mobile/Testing */
-    .controls-hint {
-      margin-top: 14px;
-      color: #64748b;
-      font-size: 0.85rem;
-      display: flex;
-      gap: 12px;
-      align-items: center;
-    }
-
-    .key-badge {
-      background: #272a3d;
-      padding: 3px 8px;
-      border-radius: 6px;
+    /* Zone Label overlay */
+    .zone-indicator {
+      position: absolute;
+      top: 12px;
+      left: 12px;
+      background: rgba(15, 23, 42, 0.85);
+      -webkit-backdrop-filter: blur(6px);
+      backdrop-filter: blur(6px);
+      padding: 6px 14px;
+      border-radius: 8px;
       border: 1px solid rgba(255, 255, 255, 0.1);
-      color: #e2e8f0;
-      font-family: 'Press Start 2P', monospace;
-      font-size: 0.65rem;
+      font-size: 0.8rem;
+      font-weight: 600;
+      pointer-events: none;
+    }
+
+    /* D-Pad Overlay (สำหรับจอมือถือหรือคลิกเดิน) */
+    .dpad-container {
+      position: absolute;
+      bottom: 16px;
+      right: 16px;
+      display: grid;
+      grid-template-columns: repeat(3, 42px);
+      grid-template-rows: repeat(3, 42px);
+      gap: 4px;
+      z-index: 10;
+    }
+
+    .dpad-btn {
+      background: rgba(30, 34, 56, 0.75);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      color: #fff;
+      font-size: 1.1rem;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      -webkit-backdrop-filter: blur(4px);
+      backdrop-filter: blur(4px);
+    }
+    .dpad-btn:active { background: var(--accent); }
+
+    /* Farm Tab Styles */
+    .farm-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+      gap: 12px;
+      width: 100%;
+      max-width: 900px;
+      margin: 0 auto;
+    }
+
+    .spirit-card {
+      background: var(--card-bg);
+      border-radius: 12px;
+      padding: 14px;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      gap: 6px;
+      box-shadow: 0 4px 14px rgba(0,0,0,0.3);
+      position: relative;
+    }
+
+    .spirit-avatar {
+      font-size: 2.8rem;
+      margin-bottom: 4px;
+      filter: drop-shadow(0 4px 8px rgba(0,0,0,0.5));
+    }
+
+    .spirit-name { font-weight: 600; font-size: 1rem; }
+    .spirit-zone { font-size: 0.75rem; color: var(--text-muted); }
+    .spirit-stat {
+      width: 100%;
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.75rem;
+      background: var(--card-inner);
+      padding: 4px 8px;
+      border-radius: 6px;
+      margin-top: 4px;
+    }
+
+    /* Battle Tab Styles */
+    .arena-box {
+      width: 100%;
+      max-width: 600px;
+      margin: auto;
+      background: var(--card-bg);
+      border-radius: 16px;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    .fighter-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: var(--card-inner);
+      padding: 14px;
+      border-radius: 12px;
+    }
+
+    .hp-bar-outer {
+      width: 120px;
+      height: 10px;
+      background: #334155;
+      border-radius: 99px;
+      overflow: hidden;
+      margin-top: 6px;
+    }
+    .hp-bar-inner {
+      height: 100%;
+      background: var(--hp);
+      width: 100%;
+      transition: width 0.3s;
+    }
+
+    .battle-actions {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    .btn-action {
+      padding: 12px;
+      background: var(--accent);
+      border: none;
+      color: #fff;
+      font-weight: 600;
+      border-radius: 8px;
+      cursor: pointer;
+      font-family: inherit;
+    }
+    .btn-action:hover { background: var(--accent-hover); }
+    .btn-flee { background: #475569; }
+
+    /* Catch Modal Popup */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.85);
+      -webkit-backdrop-filter: blur(8px);
+      backdrop-filter: blur(8px);
+      display: none;
+      justify-content: center;
+      align-items: center;
+      z-index: 200;
+      padding: 20px;
+    }
+    .modal-overlay.active { display: flex; }
+
+    .modal-box {
+      background: var(--card-bg);
+      border: 2px solid var(--accent);
+      border-radius: 16px;
+      padding: 24px;
+      width: 100%;
+      max-width: 360px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 14px;
+      text-align: center;
+      box-shadow: 0 0 40px rgba(88, 101, 242, 0.3);
+      animation: popIn 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+
+    @keyframes popIn {
+      from { transform: scale(0.85); opacity: 0; }
+      to { transform: scale(1); opacity: 1; }
+    }
+
+    .catch-icon { font-size: 4rem; filter: drop-shadow(0 6px 12px rgba(0,0,0,0.6)); }
+    .catch-title { font-size: 1.2rem; font-weight: 700; }
+    .catch-desc { font-size: 0.85rem; color: var(--text-muted); }
+
+    .btn-group {
+      display: flex;
+      gap: 10px;
+      width: 100%;
+      margin-top: 8px;
+    }
+    .btn-catch {
+      flex: 1;
+      padding: 10px;
+      background: linear-gradient(135deg, #a855f7, #6366f1);
+      border: none;
+      color: white;
+      font-weight: 600;
+      border-radius: 8px;
+      cursor: pointer;
+      font-family: inherit;
+    }
+    .btn-cancel {
+      flex: 1;
+      padding: 10px;
+      background: #334155;
+      border: none;
+      color: white;
+      border-radius: 8px;
+      cursor: pointer;
+      font-family: inherit;
     }
   </style>
 </head>
@@ -157,27 +421,93 @@
       <span>✨ Spirit Pocket</span>
     </div>
     <div class="stats">
-      <div class="stat-badge stat-gold">💰 <span id="goldVal">100</span> Gold</div>
-      <div class="stat-badge stat-balls">🔮 <span id="ballVal">3</span> ลูก</div>
+      <div class="badge badge-gold">💰 <span id="goldVal">100</span> Gold</div>
+      <div class="badge badge-balls">🔮 <span id="ballVal">5</span> ลูก</div>
     </div>
   </header>
 
-  <div class="tabs">
-    <button class="tab-btn active">🗺️ แผนที่สำรวจ</button>
-    <button class="tab-btn">🏡 ฟาร์มสัตว์เลี้ยง</button>
-    <button class="tab-btn">⚔️ ลานประลอง</button>
-  </div>
+  <nav>
+    <button class="tab-btn active" onclick="window.switchTab('map')">🗺️ แผนที่สำรวจ</button>
+    <button class="tab-btn" onclick="window.switchTab('farm')">🏡 ฟาร์มสัตว์เลี้ยง (<span id="petCount">0</span>)</button>
+    <button class="tab-btn" onclick="window.switchTab('battle')">⚔️ ลานประลอง</button>
+  </nav>
 
-  <div class="game-container">
-    <canvas id="gameCanvas" width="500" height="500"></canvas>
-    
-    <div class="controls-hint">
-      <span>ควบคุม:</span>
-      <span class="key-badge">W</span>
-      <span class="key-badge">A</span>
-      <span class="key-badge">S</span>
-      <span class="key-badge">D</span>
-      <span>หรือปุ่มลูกศรเพื่อเดินตามช่อง (Grid)</span>
+  <main>
+    <!-- 1. MAP VIEW -->
+    <section id="view-map" class="view-section active">
+      <div id="canvasWrapper">
+        <canvas id="gameCanvas" width="600" height="600"></canvas>
+        <div class="zone-indicator" id="zoneTag">📍 ป่าเวทมนตร์ (Mystic Forest)</div>
+        
+        <!-- Touch Virtual D-Pad -->
+        <div class="dpad-container">
+          <div></div>
+          <button class="dpad-btn" onclick="window.move('UP')">▲</button>
+          <div></div>
+          <button class="dpad-btn" onclick="window.move('LEFT')">◀</button>
+          <button class="dpad-btn" onclick="window.move('DOWN')">▼</button>
+          <button class="dpad-btn" onclick="window.move('RIGHT')">▶</button>
+          <div></div>
+          <div></div>
+          <div></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 2. FARM VIEW -->
+    <section id="view-farm" class="view-section">
+      <div class="farm-grid" id="farmContainer">
+        <!-- Render Pets Here -->
+      </div>
+    </section>
+
+    <!-- 3. BATTLE VIEW -->
+    <section id="view-battle" class="view-section">
+      <div class="arena-box">
+        <h3 style="text-align: center; color: var(--gold);">🏆 Spirit Arena</h3>
+        
+        <!-- Opponent -->
+        <div class="fighter-row">
+          <div>
+            <div style="font-weight:700;">🔥 Ignis Fox (Wild Boss)</div>
+            <div class="hp-bar-outer"><div id="enemyHp" class="hp-bar-inner"></div></div>
+          </div>
+          <div style="font-size: 2.5rem;">🦊</div>
+        </div>
+
+        <!-- Player Pet -->
+        <div class="fighter-row">
+          <div style="font-size: 2.5rem;" id="battleMyPetIcon">🐢</div>
+          <div style="text-align:right;">
+            <div style="font-weight:700;" id="battleMyPetName">Shellrock</div>
+            <div class="hp-bar-outer"><div id="playerHp" class="hp-bar-inner"></div></div>
+          </div>
+        </div>
+
+        <div style="font-size: 0.85rem; color: var(--text-muted); min-height: 40px; text-align: center;" id="battleLog">
+          เลือกคำสั่งการต่อสู้!
+        </div>
+
+        <div class="battle-actions">
+          <button class="btn-action" onclick="window.battleAction('attack')">⚔️ โจมตี</button>
+          <button class="btn-action" onclick="window.battleAction('skill')">✨ ใช้สกิลธาตุ</button>
+          <button class="btn-action" onclick="window.battleAction('heal')">🧪 ฟื้นพลัง</button>
+          <button class="btn-action btn-flee" onclick="window.switchTab('map')">🏃 หลบหนี</button>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- Catch Encounter Popup -->
+  <div class="modal-overlay" id="catchModal">
+    <div class="modal-box">
+      <div class="catch-icon" id="catchIcon">🦊</div>
+      <div class="catch-title" id="catchTitle">พบสัตว์วิญญาณป่า!</div>
+      <div class="catch-desc" id="catchDesc">สัตว์ชนิดนี้กำลังจ้องมองคุณ... คุณต้องการใช้ Spirit Ball จับหรือไม่?</div>
+      <div class="btn-group">
+        <button class="btn-cancel" onclick="window.closeCatchModal()">ถอยหนี</button>
+        <button class="btn-catch" onclick="window.attemptCatch()">🔮 ปาบอลจับ</button>
+      </div>
     </div>
   </div>
 
@@ -185,7 +515,7 @@
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-app.js";
     import { getDatabase, ref, set, onValue } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-database.js";
 
-    // 1. Firebase Config
+    // 1. Firebase Configuration
     const firebaseConfig = {
       apiKey: "AIzaSyC6EcXI9tFmY9ryhIgZ23Uqn3E25jAEEXU",
       authDomain: "s3l-agent-world.firebaseapp.com",
@@ -197,166 +527,344 @@
     };
 
     const app = initializeApp(firebaseConfig);
-    const db = getDatabase(app);
+    let db = null;
+    try {
+      db = getDatabase(app);
+    } catch (e) {
+      console.warn("Firebase DB unavailable, running offline:", e);
+    }
 
-    // 2. Discord Embedded App SDK Setup
+    // Discord App Integration
     let discordSdk = null;
-    let authUser = { id: "local-user-" + Math.floor(Math.random() * 1000), username: "Trainer" };
-
-    async function initDiscord() {
-      try {
-        if (window.DiscordSDK) {
-          discordSdk = new window.DiscordSDK.DiscordSDK("1561819450917916842");
+    let userId = "user-" + Math.floor(Math.random() * 10000);
+    async function setupDiscord() {
+      // UMD อาจ expose เป็น window.DiscordSDK.DiscordSDK หรือ window.DiscordSDK ตรงๆ
+      const NS = window.DiscordSDK || window.discordSdk || null;
+      const Ctor = (NS && (NS.DiscordSDK || NS)) || null;
+      if (typeof Ctor === "function") {
+        try {
+          discordSdk = new Ctor("1561819450917916842");
           await discordSdk.ready();
-          console.log("Discord SDK is Ready!");
+        } catch (e) {
+          console.warn("Discord SDK fallback to local mode:", e);
         }
-      } catch (err) {
-        console.warn("Discord SDK Init failed/skipped (running standalone mode):", err);
       }
     }
-    initDiscord();
+    setupDiscord();
 
-    // 3. Grid Game Engine Setup
+    // Module พร้อมแล้ว — ให้ fallback หลีกทาง + ปุ่ม onclick ใช้งานตัวจริงได้
+    window.__spModuleReady = true;
+
+    // Game Global State
+    let gold = 100;
+    let balls = 5;
+    let caughtSpirits = [];
+    let currentEncounter = null;
+
+    // 2. Multi-Zone 12x12 Map Layout
+    // Biome Index: 0 = ป่า (Meadow), 1 = หินภูเขาไฟ (Volcano), 2 = บึงศักดิ์สิทธิ์ (Lake), 3 = สิ่งกีดขวาง (Wall/Tree)
+    const GRID_DIM = 12;
     const canvas = document.getElementById("gameCanvas");
     const ctx = canvas.getContext("2d");
+    const TILE = canvas.width / GRID_DIM; // 50px per tile
 
-    const GRID_SIZE = 10;           // 10x10 ช่อง
-    const TILE_SIZE = canvas.width / GRID_SIZE; // ช่องละ 50px
+    const biomeMap = [
+      // แดนป่าไม้ (Forest Zone) - มุมบนซ้าย
+      [0, 0, 0, 0, 3, 0,  1, 1, 1, 3, 1, 1],
+      [0, 0, 3, 0, 0, 0,  1, 1, 1, 1, 1, 1],
+      [0, 3, 0, 0, 0, 0,  1, 3, 1, 1, 1, 1],
+      [0, 0, 0, 0, 3, 0,  1, 1, 1, 1, 3, 1],
+      [3, 0, 0, 0, 0, 0,  3, 1, 1, 1, 1, 1],
+      [0, 0, 3, 0, 0, 0,  0, 0, 1, 1, 1, 1],
+      // แดนบึงน้ำศักดิ์สิทธิ์ (Mystic Lake) - โซนล่าง
+      [2, 2, 2, 0, 0, 0,  0, 0, 0, 3, 0, 0],
+      [2, 2, 2, 2, 0, 0,  0, 0, 0, 0, 0, 0],
+      [2, 3, 2, 2, 2, 0,  0, 0, 3, 0, 0, 0],
+      [2, 2, 2, 2, 2, 0,  0, 0, 0, 0, 3, 0],
+      [2, 2, 3, 2, 0, 0,  0, 3, 0, 0, 0, 0],
+      [2, 2, 2, 0, 0, 0,  0, 0, 0, 0, 0, 0]
+    ];
 
-    // ผู้เล่น (ตำแหน่ง Grid x: 0-9, y: 0-9)
+    // รายชื่อสัตว์วิญญาณกระจายตามโซน (ตำแหน่งต้องไม่ทับกำแพง type 3)
+    let wildSpirits = [
+      { id: 1, x: 1, y: 1, icon: "🍃", name: "Leafy Bunny", zone: "Forest", power: 45 },
+      { id: 2, x: 3, y: 3, icon: "🦊", name: "Sly Kitsune", zone: "Forest", power: 65 },
+      { id: 3, x: 9, y: 2, icon: "🔥", name: "Magma Drake", zone: "Volcano", power: 85 },
+      { id: 4, x: 10, y: 4, icon: "🦅", name: "Cinder Hawk", zone: "Volcano", power: 70 },
+      { id: 5, x: 1, y: 7, icon: "💧", name: "Aqua Turtle", zone: "Lake", power: 55 },
+      { id: 6, x: 3, y: 9, icon: "🐉", name: "Mist Serpent", zone: "Lake", power: 90 }
+    ];
+
+    // Player State
     const player = {
-      x: 4,
-      y: 4,
-      targetPixelX: 4 * TILE_SIZE,
-      targetPixelY: 4 * TILE_SIZE,
-      currentPixelX: 4 * TILE_SIZE,
-      currentPixelY: 4 * TILE_SIZE,
-      color: "#38bdf8",
-      name: "Me"
+      x: 5,
+      y: 5,
+      px: 5 * TILE,
+      py: 5 * TILE,
+      targetPx: 5 * TILE,
+      targetPy: 5 * TILE
     };
 
-    // จำลอง Spirits / มอนสเตอร์ในฉาก
-    const spirits = [
-      { x: 2, y: 3, icon: "🦊", name: "Kitsune" },
-      { x: 7, y: 2, icon: "🦅", name: "Skyfeather" },
-      { x: 6, y: 7, icon: "🐢", name: "Shellrock" }
-    ];
+    // Movement Handlers
+    window.move = function(direction) {
+      let nx = player.x;
+      let ny = player.y;
 
-    // แผนที่กระเบื้อง (0 = หญ้า, 1 = หินกีดขวาง, 2 = แหล่งน้ำ)
-    const worldMap = [
-      [0, 0, 0, 1, 0, 0, 0, 0, 0, 0],
-      [0, 0, 0, 1, 0, 2, 2, 0, 0, 0],
-      [0, 1, 0, 0, 0, 2, 2, 0, 0, 0],
-      [0, 0, 0, 0, 0, 0, 0, 0, 1, 0],
-      [0, 0, 0, 0, 0, 0, 0, 0, 1, 0],
-      [0, 2, 2, 0, 0, 0, 0, 0, 0, 0],
-      [0, 2, 2, 0, 1, 1, 0, 0, 0, 0],
-      [0, 0, 0, 0, 1, 0, 0, 0, 0, 0],
-      [0, 0, 1, 0, 0, 0, 0, 1, 0, 0],
-      [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
-    ];
+      if (direction === 'UP') ny--;
+      if (direction === 'DOWN') ny++;
+      if (direction === 'LEFT') nx--;
+      if (direction === 'RIGHT') nx++;
 
-    // ฟังคำสั่งกดปุ่มเดินเป็นช่อง (Grid Movement)
-    window.addEventListener("keydown", (e) => {
-      let nextX = player.x;
-      let nextY = player.y;
+      // ตรวจสอบสิ่งกีดขวาง
+      if (nx >= 0 && nx < GRID_DIM && ny >= 0 && ny < GRID_DIM) {
+        if (biomeMap[ny][nx] !== 3) { // 3 = สิ่งกีดขวาง
+          player.x = nx;
+          player.y = ny;
+          player.targetPx = nx * TILE;
+          player.targetPy = ny * TILE;
 
-      if (e.key === "ArrowUp" || e.key === "w" || e.key === "W") nextY--;
-      if (e.key === "ArrowDown" || e.key === "s" || e.key === "S") nextY++;
-      if (e.key === "ArrowLeft" || e.key === "a" || e.key === "A") nextX--;
-      if (e.key === "ArrowRight" || e.key === "d" || e.key === "D") nextX++;
+          updateZoneIndicator(nx, ny);
+          checkSpiritEncounter(nx, ny);
 
-      // ตรวจสอบขอบกระดานและสิ่งกีดขวาง (เดินชนหินหรือน้ำไม่ได้)
-      if (
-        nextX >= 0 && nextX < GRID_SIZE &&
-        nextY >= 0 && nextY < GRID_SIZE &&
-        worldMap[nextY][nextX] === 0
-      ) {
-        player.x = nextX;
-        player.y = nextY;
-        player.targetPixelX = nextX * TILE_SIZE;
-        player.targetPixelY = nextY * TILE_SIZE;
-
-        // อัปเดตพิกัดขึ้น Firebase Realtime Database
-        try {
-          set(ref(db, 'players/' + authUser.id), {
-            x: player.x,
-            y: player.y,
-            updatedAt: Date.now()
-          });
-        } catch (err) {
-          console.error("Firebase update error:", err);
+          // ซิงค์ตำแหน่งกับ Firebase (ถ้า db พร้อม)
+          try {
+            if (db) set(ref(db, 'players/' + userId), { x: nx, y: ny, time: Date.now() });
+          } catch(e) {}
         }
       }
+    };
+
+    window.addEventListener("keydown", (e) => {
+      if (document.getElementById("catchModal").classList.contains("active")) return;
+      if (e.key === "w" || e.key === "ArrowUp") window.move('UP');
+      if (e.key === "s" || e.key === "ArrowDown") window.move('DOWN');
+      if (e.key === "a" || e.key === "ArrowLeft") window.move('LEFT');
+      if (e.key === "d" || e.key === "ArrowRight") window.move('RIGHT');
     });
 
-    // วงลูปเรนเดอร์กราฟิก
+    function updateZoneIndicator(x, y) {
+      const tile = biomeMap[y][x];
+      const tag = document.getElementById("zoneTag");
+      if (tile === 1) tag.innerText = "📍 ดินแดนภูเขาไฟ (Magma Crag)";
+      else if (tile === 2) tag.innerText = "📍 บึงน้ำศักดิ์สิทธิ์ (Mystic Lake)";
+      else tag.innerText = "📍 ป่าเวทมนตร์ (Mystic Forest)";
+    }
+
+    // Encounter & Catch System
+    function checkSpiritEncounter(x, y) {
+      const index = wildSpirits.findIndex(s => s.x === x && s.y === y);
+      if (index !== -1) {
+        currentEncounter = { ...wildSpirits[index], listIndex: index };
+        openCatchModal(currentEncounter);
+      }
+    }
+
+    function openCatchModal(spirit) {
+      document.getElementById("catchIcon").innerText = spirit.icon;
+      document.getElementById("catchTitle").innerText = `พบ ${spirit.name}!`;
+      document.getElementById("catchDesc").innerText = `ระดับพลัง: ${spirit.power} | โซน: ${spirit.zone}\nคุณมี Spirit Ball ${balls} ลูก`;
+      document.getElementById("catchModal").classList.add("active");
+    }
+
+    window.closeCatchModal = function() {
+      document.getElementById("catchModal").classList.remove("active");
+      currentEncounter = null;
+    };
+
+    window.attemptCatch = function() {
+      if (!currentEncounter) return;
+      if (balls <= 0) {
+        alert("Spirit Ball หมดแล้ว! คุณต้องการ Gold เพื่อซื้อเพิ่ม");
+        return;
+      }
+
+      balls--;
+      document.getElementById("ballVal").innerText = balls;
+
+      // สุ่มโอกาสจับสำเร็จ (70%)
+      const isSuccess = Math.random() < 0.75;
+      if (isSuccess) {
+        alert(`🎉 สำเร็จ! คุณจับ ${currentEncounter.name} ได้แล้ว! ส่งไปยังฟาร์มสัตว์เลี้ยง`);
+        caughtSpirits.push({ ...currentEncounter, caughtAt: new Date().toLocaleTimeString() });
+        
+        // ลบออกจากแมพ
+        wildSpirits.splice(currentEncounter.listIndex, 1);
+        updateFarmUI();
+        
+        // บันทึกสัตว์เลี้ยงลง Firebase
+        try {
+          set(ref(db, 'pets/' + userId), caughtSpirits);
+        } catch(e) {}
+      } else {
+        alert(`💨 เสียใจด้วย! ${currentEncounter.name} ดิ้นหลุดและหนีไปได้!`);
+      }
+
+      closeCatchModal();
+    };
+
+    // Tab Switching Logic
+    window.switchTab = function(tabName) {
+      document.querySelectorAll(".tab-btn").forEach(btn => btn.classList.remove("active"));
+      document.querySelectorAll(".view-section").forEach(sec => sec.classList.remove("active"));
+
+      if (tabName === 'map') {
+        document.querySelectorAll(".tab-btn")[0].classList.add("active");
+        document.getElementById("view-map").classList.add("active");
+      } else if (tabName === 'farm') {
+        document.querySelectorAll(".tab-btn")[1].classList.add("active");
+        document.getElementById("view-farm").classList.add("active");
+        updateFarmUI();
+      } else if (tabName === 'battle') {
+        document.querySelectorAll(".tab-btn")[2].classList.add("active");
+        document.getElementById("view-battle").classList.add("active");
+        setupBattleUI();
+      }
+    };
+
+    function updateFarmUI() {
+      const container = document.getElementById("farmContainer");
+      document.getElementById("petCount").innerText = caughtSpirits.length;
+      
+      if (caughtSpirits.length === 0) {
+        container.innerHTML = `<div style="grid-column: 1/-1; text-align:center; padding: 40px; color: var(--text-muted);">
+          ยังไม่มีสัตว์เลี้ยงในฟาร์ม<br>ออกไปสำรวจแผนที่เพื่อจับสัตว์วิญญาณด้วย Spirit Ball!
+        </div>`;
+        return;
+      }
+
+      container.innerHTML = caughtSpirits.map((pet, idx) => `
+        <div class="spirit-card">
+          <div class="spirit-avatar">${pet.icon}</div>
+          <div class="spirit-name">${pet.name}</div>
+          <div class="spirit-zone">ถิ่นกำเนิด: ${pet.zone}</div>
+          <div class="spirit-stat">
+            <span>พลังรบ</span>
+            <span style="color:var(--gold); font-weight:700;">⚔️ ${pet.power}</span>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    // Battle System
+    let enemyHpVal = 100;
+    let playerHpVal = 100;
+
+    function setupBattleUI() {
+      enemyHpVal = 100;
+      playerHpVal = 100;
+      document.getElementById("enemyHp").style.width = "100%";
+      document.getElementById("playerHp").style.width = "100%";
+      document.getElementById("battleLog").innerText = "การประลองเริ่มต้น! เลือกทักษะการต่อสู้";
+
+      if (caughtSpirits.length > 0) {
+        const myLead = caughtSpirits[0];
+        document.getElementById("battleMyPetIcon").innerText = myLead.icon;
+        document.getElementById("battleMyPetName").innerText = myLead.name;
+      }
+    }
+
+    window.battleAction = function(type) {
+      if (enemyHpVal <= 0) return;
+
+      let pDmg = 0;
+      if (type === 'attack') pDmg = Math.floor(Math.random() * 20) + 15;
+      if (type === 'skill') pDmg = Math.floor(Math.random() * 35) + 10;
+      if (type === 'heal') {
+        playerHpVal = Math.min(100, playerHpVal + 30);
+        document.getElementById("playerHp").style.width = playerHpVal + "%";
+        document.getElementById("battleLog").innerText = "คุณฟื้นฟูพลังชีวิต +30 HP!";
+      }
+
+      if (pDmg > 0) {
+        enemyHpVal = Math.max(0, enemyHpVal - pDmg);
+        document.getElementById("enemyHp").style.width = enemyHpVal + "%";
+        document.getElementById("battleLog").innerText = `คุณสร้างความเสียหาย ${pDmg} DMG!`;
+      }
+
+      if (enemyHpVal <= 0) {
+        document.getElementById("battleLog").innerText = "🎉 ชนะการประลอง! คุณได้รับ 50 Gold!";
+        gold += 50;
+        document.getElementById("goldVal").innerText = gold;
+        return;
+      }
+
+      // Enemy Counter Attack
+      setTimeout(() => {
+        const eDmg = Math.floor(Math.random() * 18) + 10;
+        playerHpVal = Math.max(0, playerHpVal - eDmg);
+        document.getElementById("playerHp").style.width = playerHpVal + "%";
+        document.getElementById("battleLog").innerText += ` | บอสสวนกลับ ${eDmg} DMG!`;
+        if (playerHpVal <= 0) {
+          alert("สัตว์เลี้ยงของคุณหมดสภาพการต่อสู้!");
+          window.switchTab('map');
+        }
+      }, 500);
+    };
+
+    // Render Canvas Loop (60 FPS)
     function render() {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-      // 1. วาดตาราง Grid Map
-      for (let y = 0; y < GRID_SIZE; y++) {
-        for (let x = 0; x < GRID_SIZE; x++) {
-          const tile = worldMap[y][x];
-          
-          if (tile === 0) {
-            // หญ้า (สลับสีลายตารางหมากรุกให้มีมิติ)
-            ctx.fillStyle = (x + y) % 2 === 0 ? "#1e293b" : "#243147";
-          } else if (tile === 1) {
-            // หิน
-            ctx.fillStyle = "#475569";
-          } else if (tile === 2) {
-            // น้ำ
-            ctx.fillStyle = "#0284c7";
+      // 1. Draw Multi-Zone Tiles
+      for (let r = 0; r < GRID_DIM; r++) {
+        for (let c = 0; c < GRID_DIM; c++) {
+          const type = biomeMap[r][c];
+          if (type === 0) {
+            // ป่าหญ้าเขียว
+            ctx.fillStyle = (r + c) % 2 === 0 ? "#1b4332" : "#2d6a4f";
+          } else if (type === 1) {
+            // ดินภูเขาไฟ/หินแดง
+            ctx.fillStyle = (r + c) % 2 === 0 ? "#7f1d1d" : "#991b1b";
+          } else if (type === 2) {
+            // บึงน้ำสีคราม
+            ctx.fillStyle = (r + c) % 2 === 0 ? "#0369a1" : "#0284c7";
+          } else if (type === 3) {
+            // สิ่งกีดขวาง (ต้นไม้/หินใหญ่)
+            ctx.fillStyle = "#0f172a";
           }
 
-          ctx.fillRect(x * TILE_SIZE, y * TILE_SIZE, TILE_SIZE, TILE_SIZE);
-          
-          // ขอบเส้น Grid เบาๆ
-          ctx.strokeStyle = "rgba(255, 255, 255, 0.03)";
-          ctx.strokeRect(x * TILE_SIZE, y * TILE_SIZE, TILE_SIZE, TILE_SIZE);
+          ctx.fillRect(c * TILE, r * TILE, TILE, TILE);
+          ctx.strokeStyle = "rgba(255, 255, 255, 0.04)";
+          ctx.strokeRect(c * TILE, r * TILE, TILE, TILE);
+
+          // สิ่งกีดขวางไอคอน
+          if (type === 3) {
+            ctx.font = "20px sans-serif";
+            ctx.fillText("🌲", c * TILE + TILE/2, r * TILE + TILE/2);
+          }
         }
       }
 
-      // 2. วาดวิญญาณ / มอนสเตอร์ในช่อง
-      ctx.font = "24px sans-serif";
+      // 2. Draw Wild Spirits on Field
       ctx.textAlign = "center";
       ctx.textBaseline = "middle";
-      for (const sp of spirits) {
-        ctx.fillText(sp.icon, sp.x * TILE_SIZE + TILE_SIZE / 2, sp.y * TILE_SIZE + TILE_SIZE / 2);
+      ctx.font = "26px sans-serif";
+      for (const s of wildSpirits) {
+        ctx.fillText(s.icon, s.x * TILE + TILE/2, s.y * TILE + TILE/2);
       }
 
-      // 3. ปรับตำแหน่งตัวละครให้เดินแบบ Smooth Interpolation เข้าหา Grid
-      player.currentPixelX += (player.targetPixelX - player.currentPixelX) * 0.25;
-      player.currentPixelY += (player.targetPixelY - player.currentPixelY) * 0.25;
+      // 3. Smooth Player Interpolation
+      player.px += (player.targetPx - player.px) * 0.3;
+      player.py += (player.targetPy - player.py) * 0.3;
 
-      // วาดเงาใต้ตัวละคร
+      // วาดเงา
       ctx.fillStyle = "rgba(0, 0, 0, 0.4)";
       ctx.beginPath();
-      ctx.ellipse(
-        player.currentPixelX + TILE_SIZE / 2, 
-        player.currentPixelY + TILE_SIZE / 2 + 16, 
-        14, 6, 0, 0, Math.PI * 2
-      );
+      ctx.ellipse(player.px + TILE/2, player.py + TILE/2 + 14, 14, 6, 0, 0, Math.PI * 2);
       ctx.fill();
 
-      // วาดอวตารผู้เล่น
-      ctx.fillStyle = player.color;
+      // วาดตัวละครผู้เล่น (Trainer Token)
+      ctx.fillStyle = "#38bdf8";
       ctx.beginPath();
-      ctx.arc(
-        player.currentPixelX + TILE_SIZE / 2, 
-        player.currentPixelY + TILE_SIZE / 2, 
-        16, 0, Math.PI * 2
-      );
+      ctx.arc(player.px + TILE/2, player.py + TILE/2, 16, 0, Math.PI * 2);
       ctx.fill();
       ctx.lineWidth = 3;
       ctx.strokeStyle = "#ffffff";
       ctx.stroke();
 
-      // ชื่อผู้เล่น
+      ctx.fillStyle = "#fff";
       ctx.font = "12px Kanit";
-      ctx.fillStyle = "#ffffff";
-      ctx.fillText(player.name, player.currentPixelX + TILE_SIZE / 2, player.currentPixelY + TILE_SIZE / 2 - 24);
+      ctx.fillText("You", player.px + TILE/2, player.py + TILE/2 - 22);
 
       requestAnimationFrame(render);
     }
