@@ -4,41 +4,13 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Spirit Pocket</title>
-  <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;600;700&family=Press+Start+2P&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;600;700&display=swap" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/@discord/embedded-app-sdk@1.0.0/dist/umd/index.js"></script>
-  <!-- Fallback: ถ้า UMD โหลดไม่ได้หรือ module/import ล้มเหลว เกมต้องยังเล่น offline ได้ -->
-  <script>
-    // ---- Fallback movement (non-module) — ใช้เฉพาะตอน module ยังไม่พร้อม ----
-    // ตัวจริงใน <script type="module"> จะมา override window.move / switchTab ทีหลัง
-    window.__spModuleReady = false;
-    if (!window.move) {
-      window.move = function () { if (!window.__spModuleReady) console.log('Game module loading...'); };
-    }
-    if (!window.switchTab) {
-      window.switchTab = function (tabName) {
-        document.querySelectorAll(".tab-btn").forEach(btn => btn.classList.remove("active"));
-        document.querySelectorAll(".view-section").forEach(sec => sec.classList.remove("active"));
-        var map = { map: 0, farm: 1, battle: 2 };
-        var btns = document.querySelectorAll(".tab-btn");
-        if (btns[map[tabName]] !== undefined) btns[map[tabName]].classList.add("active");
-        var sec = document.getElementById("view-" + tabName);
-        if (sec) sec.classList.add("active");
-      };
-    }
-    if (!window.battleAction) { window.battleAction = function () {}; }
-    if (!window.closeCatchModal) {
-      window.closeCatchModal = function () {
-        var m = document.getElementById("catchModal");
-        if (m) m.classList.remove("active");
-      };
-    }
-    if (!window.attemptCatch) { window.attemptCatch = function () {}; }
-  </script>
   <style>
     :root {
-      --bg-dark: #090a10;
+      --bg-dark: #0a0c14;
       --card-bg: #141724;
-      --card-inner: #1e2238;
+      --card-inner: #1c2035;
       --accent: #5865f2;
       --accent-hover: #4752c4;
       --gold: #f59e0b;
@@ -53,8 +25,6 @@
       box-sizing: border-box;
       margin: 0;
       padding: 0;
-      -webkit-user-select: none;
-      user-select: none;
       -webkit-tap-highlight-color: transparent;
     }
 
@@ -67,19 +37,19 @@
       display: flex;
       flex-direction: column;
       overflow: hidden;
+      user-select: none;
+      -webkit-user-select: none;
     }
 
     /* Top Bar */
     header {
       width: 100%;
-      height: 52px;
+      height: 48px;
       padding: 0 16px;
       display: flex;
       justify-content: space-between;
       align-items: center;
       background: rgba(20, 23, 36, 0.95);
-      -webkit-backdrop-filter: blur(10px);
-      backdrop-filter: blur(10px);
       border-bottom: 1px solid rgba(255, 255, 255, 0.08);
       flex-shrink: 0;
       z-index: 100;
@@ -90,12 +60,10 @@
       align-items: center;
       gap: 8px;
       font-weight: 700;
-      font-size: 1.1rem;
+      font-size: 1.15rem;
       background: linear-gradient(135deg, #a855f7, #38bdf8);
       -webkit-background-clip: text;
-      background-clip: text;
       -webkit-text-fill-color: transparent;
-      color: transparent;
     }
 
     .stats {
@@ -108,11 +76,11 @@
     .badge {
       display: flex;
       align-items: center;
-      gap: 5px;
-      background: rgba(0, 0, 0, 0.4);
-      padding: 4px 10px;
+      gap: 6px;
+      background: rgba(0, 0, 0, 0.5);
+      padding: 4px 12px;
       border-radius: 20px;
-      border: 1px solid rgba(255, 255, 255, 0.06);
+      border: 1px solid rgba(255, 255, 255, 0.08);
     }
     .badge-gold { color: var(--gold); }
     .badge-balls { color: var(--ball); }
@@ -121,17 +89,18 @@
     nav {
       display: flex;
       background: var(--card-bg);
-      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.06);
       flex-shrink: 0;
-      padding: 4px 12px;
+      padding: 6px 12px;
       gap: 8px;
+      z-index: 90;
     }
 
     .tab-btn {
       flex: 1;
-      padding: 8px 12px;
+      padding: 8px 10px;
       background: transparent;
-      border: none;
+      border: 1px solid transparent;
       color: var(--text-muted);
       font-family: inherit;
       font-size: 0.85rem;
@@ -143,7 +112,10 @@
       justify-content: center;
       gap: 6px;
       transition: all 0.2s;
+      pointer-events: auto !important;
     }
+
+    .tab-btn:hover { background: rgba(255, 255, 255, 0.05); }
 
     .tab-btn.active {
       background: var(--accent);
@@ -151,7 +123,7 @@
       box-shadow: 0 4px 12px rgba(88, 101, 242, 0.35);
     }
 
-    /* Main Content Viewports */
+    /* Main Container */
     main {
       flex: 1;
       position: relative;
@@ -159,6 +131,7 @@
       display: flex;
       justify-content: center;
       align-items: center;
+      background: #050608;
     }
 
     .view-section {
@@ -167,21 +140,19 @@
       display: none;
       flex-direction: column;
       overflow-y: auto;
-      padding: 12px;
+      padding: 16px;
+      pointer-events: auto;
     }
 
-    .view-section.active {
-      display: flex;
-    }
+    .view-section.active { display: flex; }
 
-    /* Map Tab Styles */
+    /* 1550:750 Landscape Game Canvas */
     #view-map {
       padding: 0;
       display: none;
       justify-content: center;
       align-items: center;
       background: #000;
-      position: relative;
     }
     #view-map.active { display: flex; }
 
@@ -196,43 +167,60 @@
 
     canvas {
       image-rendering: pixelated;
-      box-shadow: 0 0 30px rgba(0,0,0,0.8);
-      max-width: 100%;
-      max-height: 100%;
-      aspect-ratio: 1 / 1;
+      width: min(98vw, calc(92vh * (1550 / 750)));
+      height: min(calc(98vw * (750 / 1550)), 92vh);
+      aspect-ratio: 1550 / 750;
+      background: #0f172a;
+      border: 2px solid rgba(255, 255, 255, 0.12);
+      border-radius: 12px;
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.9);
+      cursor: crosshair;
+      pointer-events: auto !important;
     }
 
-    /* Zone Label overlay */
     .zone-indicator {
       position: absolute;
-      top: 12px;
-      left: 12px;
-      background: rgba(15, 23, 42, 0.85);
-      -webkit-backdrop-filter: blur(6px);
-      backdrop-filter: blur(6px);
+      top: 14px;
+      left: 14px;
+      background: rgba(15, 23, 42, 0.88);
+      backdrop-filter: blur(8px);
       padding: 6px 14px;
       border-radius: 8px;
-      border: 1px solid rgba(255, 255, 255, 0.1);
-      font-size: 0.8rem;
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      font-size: 0.85rem;
       font-weight: 600;
       pointer-events: none;
     }
 
-    /* D-Pad Overlay (สำหรับจอมือถือหรือคลิกเดิน) */
+    .controls-hint {
+      position: absolute;
+      bottom: 12px;
+      left: 14px;
+      background: rgba(15, 23, 42, 0.8);
+      backdrop-filter: blur(6px);
+      padding: 6px 12px;
+      border-radius: 6px;
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      pointer-events: none;
+    }
+
+    /* D-Pad Floating Controls */
     .dpad-container {
       position: absolute;
       bottom: 16px;
       right: 16px;
       display: grid;
-      grid-template-columns: repeat(3, 42px);
-      grid-template-rows: repeat(3, 42px);
+      grid-template-columns: repeat(3, 44px);
+      grid-template-rows: repeat(3, 44px);
       gap: 4px;
-      z-index: 10;
+      z-index: 50;
+      pointer-events: auto !important;
     }
 
     .dpad-btn {
-      background: rgba(30, 34, 56, 0.75);
-      border: 1px solid rgba(255, 255, 255, 0.15);
+      background: rgba(30, 34, 56, 0.8);
+      border: 1px solid rgba(255, 255, 255, 0.2);
       color: #fff;
       font-size: 1.1rem;
       border-radius: 8px;
@@ -240,63 +228,100 @@
       align-items: center;
       justify-content: center;
       cursor: pointer;
-      -webkit-backdrop-filter: blur(4px);
       backdrop-filter: blur(4px);
+      user-select: none;
     }
     .dpad-btn:active { background: var(--accent); }
 
-    /* Farm Tab Styles */
+    /* Farm View */
     .farm-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
-      gap: 12px;
+      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+      gap: 16px;
       width: 100%;
-      max-width: 900px;
+      max-width: 1100px;
       margin: 0 auto;
     }
 
     .spirit-card {
       background: var(--card-bg);
-      border-radius: 12px;
-      padding: 14px;
+      border-radius: 14px;
+      padding: 16px;
       border: 1px solid rgba(255, 255, 255, 0.08);
       display: flex;
       flex-direction: column;
       align-items: center;
-      text-align: center;
-      gap: 6px;
-      box-shadow: 0 4px 14px rgba(0,0,0,0.3);
+      gap: 8px;
+      box-shadow: 0 4px 14px rgba(0,0,0,0.4);
       position: relative;
     }
 
+    .spirit-card.active-companion {
+      border-color: var(--accent);
+      box-shadow: 0 0 15px rgba(88, 101, 242, 0.4);
+    }
+
     .spirit-avatar {
-      font-size: 2.8rem;
-      margin-bottom: 4px;
+      font-size: 3rem;
       filter: drop-shadow(0 4px 8px rgba(0,0,0,0.5));
     }
 
-    .spirit-name { font-weight: 600; font-size: 1rem; }
-    .spirit-zone { font-size: 0.75rem; color: var(--text-muted); }
-    .spirit-stat {
+    .btn-pet-action {
       width: 100%;
-      display: flex;
-      justify-content: space-between;
-      font-size: 0.75rem;
+      padding: 6px;
       background: var(--card-inner);
-      padding: 4px 8px;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      color: #fff;
       border-radius: 6px;
-      margin-top: 4px;
+      cursor: pointer;
+      font-family: inherit;
+      font-size: 0.8rem;
+    }
+    .btn-pet-action:hover { background: var(--accent); }
+
+    /* Shop Tab */
+    .shop-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+      gap: 16px;
+      width: 100%;
+      max-width: 900px;
+      margin: 0 auto;
     }
 
-    /* Battle Tab Styles */
+    .shop-item {
+      background: var(--card-bg);
+      border-radius: 12px;
+      padding: 16px;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+      text-align: center;
+    }
+
+    .shop-btn {
+      width: 100%;
+      padding: 8px;
+      background: var(--gold);
+      color: #000;
+      font-weight: 700;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      font-family: inherit;
+    }
+
+    /* Battle View */
     .arena-box {
       width: 100%;
-      max-width: 600px;
+      max-width: 650px;
       margin: auto;
       background: var(--card-bg);
       border-radius: 16px;
       border: 1px solid rgba(255, 255, 255, 0.1);
-      padding: 20px;
+      padding: 24px;
       display: flex;
       flex-direction: column;
       gap: 20px;
@@ -307,13 +332,13 @@
       justify-content: space-between;
       align-items: center;
       background: var(--card-inner);
-      padding: 14px;
+      padding: 16px;
       border-radius: 12px;
     }
 
     .hp-bar-outer {
-      width: 120px;
-      height: 10px;
+      width: 140px;
+      height: 12px;
       background: #334155;
       border-radius: 99px;
       overflow: hidden;
@@ -343,20 +368,19 @@
       font-family: inherit;
     }
     .btn-action:hover { background: var(--accent-hover); }
-    .btn-flee { background: #475569; }
 
-    /* Catch Modal Popup */
+    /* Modal Overlay */
     .modal-overlay {
       position: fixed;
       inset: 0;
       background: rgba(0, 0, 0, 0.85);
-      -webkit-backdrop-filter: blur(8px);
       backdrop-filter: blur(8px);
       display: none;
       justify-content: center;
       align-items: center;
       z-index: 200;
       padding: 20px;
+      pointer-events: auto !important;
     }
     .modal-overlay.active { display: flex; }
 
@@ -366,51 +390,13 @@
       border-radius: 16px;
       padding: 24px;
       width: 100%;
-      max-width: 360px;
+      max-width: 380px;
       display: flex;
       flex-direction: column;
       align-items: center;
       gap: 14px;
       text-align: center;
       box-shadow: 0 0 40px rgba(88, 101, 242, 0.3);
-      animation: popIn 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-    }
-
-    @keyframes popIn {
-      from { transform: scale(0.85); opacity: 0; }
-      to { transform: scale(1); opacity: 1; }
-    }
-
-    .catch-icon { font-size: 4rem; filter: drop-shadow(0 6px 12px rgba(0,0,0,0.6)); }
-    .catch-title { font-size: 1.2rem; font-weight: 700; }
-    .catch-desc { font-size: 0.85rem; color: var(--text-muted); }
-
-    .btn-group {
-      display: flex;
-      gap: 10px;
-      width: 100%;
-      margin-top: 8px;
-    }
-    .btn-catch {
-      flex: 1;
-      padding: 10px;
-      background: linear-gradient(135deg, #a855f7, #6366f1);
-      border: none;
-      color: white;
-      font-weight: 600;
-      border-radius: 8px;
-      cursor: pointer;
-      font-family: inherit;
-    }
-    .btn-cancel {
-      flex: 1;
-      padding: 10px;
-      background: #334155;
-      border: none;
-      color: white;
-      border-radius: 8px;
-      cursor: pointer;
-      font-family: inherit;
     }
   </style>
 </head>
@@ -427,26 +413,28 @@
   </header>
 
   <nav>
-    <button class="tab-btn active" onclick="window.switchTab('map')">🗺️ แผนที่สำรวจ</button>
-    <button class="tab-btn" onclick="window.switchTab('farm')">🏡 ฟาร์มสัตว์เลี้ยง (<span id="petCount">0</span>)</button>
-    <button class="tab-btn" onclick="window.switchTab('battle')">⚔️ ลานประลอง</button>
+    <button class="tab-btn active" id="tabNav-map">🗺️ แผนที่สำรวจ</button>
+    <button class="tab-btn" id="tabNav-farm">🏡 ฟาร์มสัตว์เลี้ยง (<span id="petCount">0</span>)</button>
+    <button class="tab-btn" id="tabNav-shop">🛒 ร้านค้าเวทมนตร์</button>
+    <button class="tab-btn" id="tabNav-battle">⚔️ ลานประลอง</button>
   </nav>
 
   <main>
-    <!-- 1. MAP VIEW -->
+    <!-- 1. MAP VIEW (1550 x 750) -->
     <section id="view-map" class="view-section active">
       <div id="canvasWrapper">
-        <canvas id="gameCanvas" width="600" height="600"></canvas>
-        <div class="zone-indicator" id="zoneTag">📍 ป่าเวทมนตร์ (Mystic Forest)</div>
+        <canvas id="gameCanvas" width="1550" height="750"></canvas>
+        <div class="zone-indicator" id="zoneTag">📍 ดินแดนพฤกษา (Mystic Forest)</div>
+        <div class="controls-hint">💡 เดินด้วย WASD / ลูกศร หรือ <b>คลิกเมาส์บนตารางเพื่อเดินไปยังช่องนั้น</b></div>
         
-        <!-- Touch Virtual D-Pad -->
+        <!-- Virtual D-Pad -->
         <div class="dpad-container">
           <div></div>
-          <button class="dpad-btn" onclick="window.move('UP')">▲</button>
+          <button class="dpad-btn" id="btn-up">▲</button>
           <div></div>
-          <button class="dpad-btn" onclick="window.move('LEFT')">◀</button>
-          <button class="dpad-btn" onclick="window.move('DOWN')">▼</button>
-          <button class="dpad-btn" onclick="window.move('RIGHT')">▶</button>
+          <button class="dpad-btn" id="btn-left">◀</button>
+          <button class="dpad-btn" id="btn-down">▼</button>
+          <button class="dpad-btn" id="btn-right">▶</button>
           <div></div>
           <div></div>
           <div></div>
@@ -456,43 +444,59 @@
 
     <!-- 2. FARM VIEW -->
     <section id="view-farm" class="view-section">
-      <div class="farm-grid" id="farmContainer">
-        <!-- Render Pets Here -->
+      <div class="farm-grid" id="farmContainer"></div>
+    </section>
+
+    <!-- 3. SHOP VIEW -->
+    <section id="view-shop" class="view-section">
+      <div class="shop-grid">
+        <div class="shop-item">
+          <div style="font-size: 3rem;">🔮</div>
+          <h3>Spirit Ball</h3>
+          <p style="font-size: 0.85rem; color: var(--text-muted);">ใช้สำหรับจับสัตว์วิญญาณในป่า</p>
+          <button class="shop-btn" id="btn-buy-ball">ซื้อ (30 Gold)</button>
+        </div>
+        <div class="shop-item">
+          <div style="font-size: 3rem;">🧪</div>
+          <h3>Healing Potion</h3>
+          <p style="font-size: 0.85rem; color: var(--text-muted);">ฟื้นฟู HP สัตว์เลี้ยงในการประลอง</p>
+          <button class="shop-btn" id="btn-buy-potion">ซื้อ (20 Gold)</button>
+        </div>
       </div>
     </section>
 
-    <!-- 3. BATTLE VIEW -->
+    <!-- 4. BATTLE VIEW -->
     <section id="view-battle" class="view-section">
       <div class="arena-box">
-        <h3 style="text-align: center; color: var(--gold);">🏆 Spirit Arena</h3>
+        <h3 style="text-align: center; color: var(--gold);">🏆 ลานประลองเวทมนตร์</h3>
         
         <!-- Opponent -->
         <div class="fighter-row">
           <div>
-            <div style="font-weight:700;">🔥 Ignis Fox (Wild Boss)</div>
+            <div style="font-weight:700;">🔥 Ignis Drake (บอสเฝ้าแดน)</div>
             <div class="hp-bar-outer"><div id="enemyHp" class="hp-bar-inner"></div></div>
           </div>
-          <div style="font-size: 2.5rem;">🦊</div>
+          <div style="font-size: 2.5rem;">🐉</div>
         </div>
 
-        <!-- Player Pet -->
+        <!-- Player Companion -->
         <div class="fighter-row">
-          <div style="font-size: 2.5rem;" id="battleMyPetIcon">🐢</div>
+          <div style="font-size: 2.5rem;" id="battleMyPetIcon">🦊</div>
           <div style="text-align:right;">
-            <div style="font-weight:700;" id="battleMyPetName">Shellrock</div>
+            <div style="font-weight:700;" id="battleMyPetName">Starter Kitsune</div>
             <div class="hp-bar-outer"><div id="playerHp" class="hp-bar-inner"></div></div>
           </div>
         </div>
 
-        <div style="font-size: 0.85rem; color: var(--text-muted); min-height: 40px; text-align: center;" id="battleLog">
+        <div style="font-size: 0.9rem; color: var(--text-muted); min-height: 40px; text-align: center;" id="battleLog">
           เลือกคำสั่งการต่อสู้!
         </div>
 
         <div class="battle-actions">
-          <button class="btn-action" onclick="window.battleAction('attack')">⚔️ โจมตี</button>
-          <button class="btn-action" onclick="window.battleAction('skill')">✨ ใช้สกิลธาตุ</button>
-          <button class="btn-action" onclick="window.battleAction('heal')">🧪 ฟื้นพลัง</button>
-          <button class="btn-action btn-flee" onclick="window.switchTab('map')">🏃 หลบหนี</button>
+          <button class="btn-action" id="btn-atk">⚔️ โจมตีปกติ</button>
+          <button class="btn-action" id="btn-skill">✨ สกิลธาตุ</button>
+          <button class="btn-action" id="btn-heal">🧪 ใช้ยาฟื้นฟู</button>
+          <button class="btn-action" style="background:#475569;" id="btn-flee">🏃 หนีกลับแมพ</button>
         </div>
       </div>
     </section>
@@ -501,21 +505,21 @@
   <!-- Catch Encounter Popup -->
   <div class="modal-overlay" id="catchModal">
     <div class="modal-box">
-      <div class="catch-icon" id="catchIcon">🦊</div>
-      <div class="catch-title" id="catchTitle">พบสัตว์วิญญาณป่า!</div>
-      <div class="catch-desc" id="catchDesc">สัตว์ชนิดนี้กำลังจ้องมองคุณ... คุณต้องการใช้ Spirit Ball จับหรือไม่?</div>
-      <div class="btn-group">
-        <button class="btn-cancel" onclick="window.closeCatchModal()">ถอยหนี</button>
-        <button class="btn-catch" onclick="window.attemptCatch()">🔮 ปาบอลจับ</button>
+      <div style="font-size: 4rem;" id="catchIcon">🦊</div>
+      <h3 id="catchTitle">พบสัตว์วิญญาณป่า!</h3>
+      <p style="font-size: 0.85rem; color: var(--text-muted);" id="catchDesc"></p>
+      <div style="display:flex; gap:10px; width:100%; margin-top:10px;">
+        <button class="btn-action" style="background:#475569; flex:1;" id="btn-catch-cancel">ถอยหนี</button>
+        <button class="btn-action" style="flex:1;" id="btn-catch-confirm">🔮 ปาบอลจับ</button>
       </div>
     </div>
   </div>
 
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-app.js";
-    import { getDatabase, ref, set, onValue } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-database.js";
+    import { getDatabase, ref, set } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-database.js";
 
-    // 1. Firebase Configuration
+    // 1. Firebase Initialization
     const firebaseConfig = {
       apiKey: "AIzaSyC6EcXI9tFmY9ryhIgZ23Uqn3E25jAEEXU",
       authDomain: "s3l-agent-world.firebaseapp.com",
@@ -528,17 +532,12 @@
 
     const app = initializeApp(firebaseConfig);
     let db = null;
-    try {
-      db = getDatabase(app);
-    } catch (e) {
-      console.warn("Firebase DB unavailable, running offline:", e);
-    }
+    try { db = getDatabase(app); } catch (e) { console.warn("Firebase Offline Mode"); }
 
-    // Discord App Integration
+    // 2. Discord Embedded App SDK
     let discordSdk = null;
-    let userId = "user-" + Math.floor(Math.random() * 10000);
-    async function setupDiscord() {
-      // UMD อาจ expose เป็น window.DiscordSDK.DiscordSDK หรือ window.DiscordSDK ตรงๆ
+    let userId = "trainer-" + Math.floor(Math.random() * 10000);
+    async function initDiscord() {
       const NS = window.DiscordSDK || window.discordSdk || null;
       const Ctor = (NS && (NS.DiscordSDK || NS)) || null;
       if (typeof Ctor === "function") {
@@ -546,185 +545,202 @@
           discordSdk = new Ctor("1561819450917916842");
           await discordSdk.ready();
         } catch (e) {
-          console.warn("Discord SDK fallback to local mode:", e);
+          console.warn("Discord SDK Local fallback:", e);
         }
       }
     }
-    setupDiscord();
+    initDiscord();
 
-    // Module พร้อมแล้ว — ให้ fallback หลีกทาง + ปุ่ม onclick ใช้งานตัวจริงได้
-    window.__spModuleReady = true;
-
-    // Game Global State
-    let gold = 100;
-    let balls = 5;
-    let caughtSpirits = [];
-    let currentEncounter = null;
-
-    // 2. Multi-Zone 12x12 Map Layout
-    // Biome Index: 0 = ป่า (Meadow), 1 = หินภูเขาไฟ (Volcano), 2 = บึงศักดิ์สิทธิ์ (Lake), 3 = สิ่งกีดขวาง (Wall/Tree)
-    const GRID_DIM = 12;
+    // 3. Grid Engine 1550 x 750 (31 Columns x 15 Rows, Tile = 50px)
     const canvas = document.getElementById("gameCanvas");
     const ctx = canvas.getContext("2d");
-    const TILE = canvas.width / GRID_DIM; // 50px per tile
+    const COLS = 31;
+    const ROWS = 15;
+    const TILE = 50;
 
-    const biomeMap = [
-      // แดนป่าไม้ (Forest Zone) - มุมบนซ้าย
-      [0, 0, 0, 0, 3, 0,  1, 1, 1, 3, 1, 1],
-      [0, 0, 3, 0, 0, 0,  1, 1, 1, 1, 1, 1],
-      [0, 3, 0, 0, 0, 0,  1, 3, 1, 1, 1, 1],
-      [0, 0, 0, 0, 3, 0,  1, 1, 1, 1, 3, 1],
-      [3, 0, 0, 0, 0, 0,  3, 1, 1, 1, 1, 1],
-      [0, 0, 3, 0, 0, 0,  0, 0, 1, 1, 1, 1],
-      // แดนบึงน้ำศักดิ์สิทธิ์ (Mystic Lake) - โซนล่าง
-      [2, 2, 2, 0, 0, 0,  0, 0, 0, 3, 0, 0],
-      [2, 2, 2, 2, 0, 0,  0, 0, 0, 0, 0, 0],
-      [2, 3, 2, 2, 2, 0,  0, 0, 3, 0, 0, 0],
-      [2, 2, 2, 2, 2, 0,  0, 0, 0, 0, 3, 0],
-      [2, 2, 3, 2, 0, 0,  0, 3, 0, 0, 0, 0],
-      [2, 2, 2, 0, 0, 0,  0, 0, 0, 0, 0, 0]
-    ];
+    let gold = 100;
+    let balls = 5;
+    let potions = 2;
+    let caughtSpirits = [];
+    let companionIndex = 0;
+    let currentEncounter = null;
 
-    // รายชื่อสัตว์วิญญาณกระจายตามโซน (ตำแหน่งต้องไม่ทับกำแพง type 3)
+    // Biomes: 0 = ป่าเขียว, 1 = ภูเขาไฟลาวา, 2 = บึงน้ำศักดิ์สิทธิ์, 3 = สิ่งกีดขวาง (ต้นไม้/หิน)
+    const mapGrid = [];
+    for (let r = 0; r < ROWS; r++) {
+      const row = [];
+      for (let c = 0; c < COLS; c++) {
+        // แดนป่าเขียว (คอลัมน์ 0 - 10)
+        if (c <= 10) {
+          row.push((c === 3 && r === 4) || (c === 7 && r === 8) ? 3 : 0);
+        }
+        // แดนภูเขาไฟ (คอลัมน์ 11 - 20)
+        else if (c <= 20) {
+          row.push((c === 15 && r === 6) || (c === 18 && r === 10) ? 3 : 1);
+        }
+        // แดนบึงน้ำ (คอลัมน์ 21 - 30)
+        else {
+          row.push((c === 25 && r === 3) || (c === 28 && r === 11) ? 3 : 2);
+        }
+      }
+      mapGrid.push(row);
+    }
+
+    // สัตว์ป่ากระจายตามโซน
     let wildSpirits = [
-      { id: 1, x: 1, y: 1, icon: "🍃", name: "Leafy Bunny", zone: "Forest", power: 45 },
-      { id: 2, x: 3, y: 3, icon: "🦊", name: "Sly Kitsune", zone: "Forest", power: 65 },
-      { id: 3, x: 9, y: 2, icon: "🔥", name: "Magma Drake", zone: "Volcano", power: 85 },
-      { id: 4, x: 10, y: 4, icon: "🦅", name: "Cinder Hawk", zone: "Volcano", power: 70 },
-      { id: 5, x: 1, y: 7, icon: "💧", name: "Aqua Turtle", zone: "Lake", power: 55 },
-      { id: 6, x: 3, y: 9, icon: "🐉", name: "Mist Serpent", zone: "Lake", power: 90 }
+      { id: 1, x: 4, y: 3, icon: "🍃", name: "Leafy Sprite", zone: "ป่าพฤกษา", power: 45 },
+      { id: 2, x: 8, y: 9, icon: "🦊", name: "Forest Kitsune", zone: "ป่าพฤกษา", power: 60 },
+      { id: 3, x: 14, y: 4, icon: "🔥", name: "Lava Wolf", zone: "แดนภูเขาไฟ", power: 85 },
+      { id: 4, x: 19, y: 12, icon: "🦅", name: "Cinder Phoenix", zone: "แดนภูเขาไฟ", power: 95 },
+      { id: 5, x: 24, y: 6, icon: "💧", name: "River Otter", zone: "บึงศักดิ์สิทธิ์", power: 55 },
+      { id: 6, x: 29, y: 10, icon: "🐉", name: "Aqua Drake", zone: "บึงศักดิ์สิทธิ์", power: 110 }
     ];
 
     // Player State
     const player = {
       x: 5,
-      y: 5,
+      y: 7,
       px: 5 * TILE,
-      py: 5 * TILE,
+      py: 7 * TILE,
       targetPx: 5 * TILE,
-      targetPy: 5 * TILE
+      targetPy: 7 * TILE
     };
 
-    // Movement Handlers
-    window.move = function(direction) {
+    // Movement Function พร้อมระบบขอบจอและสิ่งกีดขวาง
+    function move(dir) {
       let nx = player.x;
       let ny = player.y;
 
-      if (direction === 'UP') ny--;
-      if (direction === 'DOWN') ny++;
-      if (direction === 'LEFT') nx--;
-      if (direction === 'RIGHT') nx++;
+      if (dir === 'UP') ny--;
+      if (dir === 'DOWN') ny++;
+      if (dir === 'LEFT') nx--;
+      if (dir === 'RIGHT') nx--;
 
-      // ตรวจสอบสิ่งกีดขวาง
-      if (nx >= 0 && nx < GRID_DIM && ny >= 0 && ny < GRID_DIM) {
-        if (biomeMap[ny][nx] !== 3) { // 3 = สิ่งกีดขวาง
+      // ตรวจสอบไม่ให้เดินทะลุขอบ 1550x750 (0-30 และ 0-14)
+      if (nx >= 0 && nx < COLS && ny >= 0 && ny < ROWS) {
+        if (mapGrid[ny][nx] !== 3) { // 3 = สิ่งกีดขวาง
           player.x = nx;
           player.y = ny;
           player.targetPx = nx * TILE;
           player.targetPy = ny * TILE;
 
-          updateZoneIndicator(nx, ny);
-          checkSpiritEncounter(nx, ny);
+          updateZoneTag(nx);
+          checkCatchEncounter(nx, ny);
 
-          // ซิงค์ตำแหน่งกับ Firebase (ถ้า db พร้อม)
           try {
             if (db) set(ref(db, 'players/' + userId), { x: nx, y: ny, time: Date.now() });
           } catch(e) {}
         }
       }
-    };
-
-    window.addEventListener("keydown", (e) => {
-      if (document.getElementById("catchModal").classList.contains("active")) return;
-      if (e.key === "w" || e.key === "ArrowUp") window.move('UP');
-      if (e.key === "s" || e.key === "ArrowDown") window.move('DOWN');
-      if (e.key === "a" || e.key === "ArrowLeft") window.move('LEFT');
-      if (e.key === "d" || e.key === "ArrowRight") window.move('RIGHT');
-    });
-
-    function updateZoneIndicator(x, y) {
-      const tile = biomeMap[y][x];
-      const tag = document.getElementById("zoneTag");
-      if (tile === 1) tag.innerText = "📍 ดินแดนภูเขาไฟ (Magma Crag)";
-      else if (tile === 2) tag.innerText = "📍 บึงน้ำศักดิ์สิทธิ์ (Mystic Lake)";
-      else tag.innerText = "📍 ป่าเวทมนตร์ (Mystic Forest)";
     }
 
-    // Encounter & Catch System
-    function checkSpiritEncounter(x, y) {
-      const index = wildSpirits.findIndex(s => s.x === x && s.y === y);
-      if (index !== -1) {
-        currentEncounter = { ...wildSpirits[index], listIndex: index };
-        openCatchModal(currentEncounter);
+    function updateZoneTag(x) {
+      const tag = document.getElementById("zoneTag");
+      if (x <= 10) tag.innerText = "📍 ดินแดนพฤกษา (Mystic Forest)";
+      else if (x <= 20) tag.innerText = "📍 ดินแดนภูเขาไฟลาวา (Magma Crag)";
+      else tag.innerText = "📍 บึงน้ำศักดิ์สิทธิ์ (Mystic Lake)";
+    }
+
+    // 4. Mouse Click on Canvas to Walk (Coordinate Scaling สำหรับ Discord)
+    function handleCanvasPointer(e) {
+      const rect = canvas.getBoundingClientRect();
+      const scaleX = canvas.width / rect.width;
+      const scaleY = canvas.height / rect.height;
+
+      const clickX = (e.clientX - rect.left) * scaleX;
+      const clickY = (e.clientY - rect.top) * scaleY;
+
+      const targetGridX = Math.floor(clickX / TILE);
+      const targetGridY = Math.floor(clickY / TILE);
+
+      if (targetGridX >= 0 && targetGridX < COLS && targetGridY >= 0 && targetGridY < ROWS) {
+        // ขยับเข้าหาทีละช่องตามทิศทางที่คลิก
+        if (targetGridX > player.x) move('RIGHT');
+        else if (targetGridX < player.x) move('LEFT');
+        else if (targetGridY > player.y) move('DOWN');
+        else if (targetGridY < player.y) move('UP');
       }
     }
 
-    function openCatchModal(spirit) {
-      document.getElementById("catchIcon").innerText = spirit.icon;
-      document.getElementById("catchTitle").innerText = `พบ ${spirit.name}!`;
-      document.getElementById("catchDesc").innerText = `ระดับพลัง: ${spirit.power} | โซน: ${spirit.zone}\nคุณมี Spirit Ball ${balls} ลูก`;
-      document.getElementById("catchModal").classList.add("active");
+    canvas.addEventListener("pointerdown", handleCanvasPointer);
+
+    // Keyboard Movement
+    window.addEventListener("keydown", (e) => {
+      if (document.getElementById("catchModal").classList.contains("active")) return;
+      if (e.key === "w" || e.key === "ArrowUp") move('UP');
+      if (e.key === "s" || e.key === "ArrowDown") move('DOWN');
+      if (e.key === "a" || e.key === "ArrowLeft") move('LEFT');
+      if (e.key === "d" || e.key === "ArrowRight") move('RIGHT');
+    });
+
+    // Event Listeners สำหรับ D-Pad
+    document.getElementById("btn-up").addEventListener("pointerdown", () => move('UP'));
+    document.getElementById("btn-down").addEventListener("pointerdown", () => move('DOWN'));
+    document.getElementById("btn-left").addEventListener("pointerdown", () => move('LEFT'));
+    document.getElementById("btn-right").addEventListener("pointerdown", () => move('RIGHT'));
+
+    // 5. Catch System
+    function checkCatchEncounter(x, y) {
+      const idx = wildSpirits.findIndex(s => s.x === x && s.y === y);
+      if (idx !== -1) {
+        currentEncounter = { ...wildSpirits[idx], index: idx };
+        document.getElementById("catchIcon").innerText = currentEncounter.icon;
+        document.getElementById("catchTitle").innerText = `พบ ${currentEncounter.name}!`;
+        document.getElementById("catchDesc").innerText = `ระดับพลัง: ${currentEncounter.power} | ถิ่นกำเนิด: ${currentEncounter.zone}\nคุณมี Spirit Ball ${balls} ลูก`;
+        document.getElementById("catchModal").classList.add("active");
+      }
     }
 
-    window.closeCatchModal = function() {
+    document.getElementById("btn-catch-cancel").addEventListener("click", () => {
       document.getElementById("catchModal").classList.remove("active");
       currentEncounter = null;
-    };
+    });
 
-    window.attemptCatch = function() {
+    document.getElementById("btn-catch-confirm").addEventListener("click", () => {
       if (!currentEncounter) return;
       if (balls <= 0) {
-        alert("Spirit Ball หมดแล้ว! คุณต้องการ Gold เพื่อซื้อเพิ่ม");
+        alert("Spirit Ball หมดแล้ว! สามารถไปซื้อเพิ่มได้ที่ร้านค้า");
         return;
       }
 
       balls--;
       document.getElementById("ballVal").innerText = balls;
 
-      // สุ่มโอกาสจับสำเร็จ (70%)
-      const isSuccess = Math.random() < 0.75;
-      if (isSuccess) {
-        alert(`🎉 สำเร็จ! คุณจับ ${currentEncounter.name} ได้แล้ว! ส่งไปยังฟาร์มสัตว์เลี้ยง`);
-        caughtSpirits.push({ ...currentEncounter, caughtAt: new Date().toLocaleTimeString() });
-        
-        // ลบออกจากแมพ
-        wildSpirits.splice(currentEncounter.listIndex, 1);
+      if (Math.random() < 0.75) {
+        alert(`🎉 ยินดีด้วย! จับ ${currentEncounter.name} สำเร็จ! สัตว์เลี้ยงถูกส่งไปที่ฟาร์ม`);
+        caughtSpirits.push({ ...currentEncounter, level: 1, exp: 0 });
+        wildSpirits.splice(currentEncounter.index, 1);
         updateFarmUI();
-        
-        // บันทึกสัตว์เลี้ยงลง Firebase
-        try {
-          set(ref(db, 'pets/' + userId), caughtSpirits);
-        } catch(e) {}
       } else {
-        alert(`💨 เสียใจด้วย! ${currentEncounter.name} ดิ้นหลุดและหนีไปได้!`);
+        alert(`💨 เสียใจด้วย! ${currentEncounter.name} ดิ้นหลุดและหนีไป`);
       }
 
-      closeCatchModal();
-    };
+      document.getElementById("catchModal").classList.remove("active");
+      currentEncounter = null;
+    });
 
-    // Tab Switching Logic
-    window.switchTab = function(tabName) {
-      document.querySelectorAll(".tab-btn").forEach(btn => btn.classList.remove("active"));
-      document.querySelectorAll(".view-section").forEach(sec => sec.classList.remove("active"));
+    // 6. Tab Navigation System
+    function setupTab(btnId, viewId, onOpen) {
+      const btn = document.getElementById(btnId);
+      btn.addEventListener("click", () => {
+        document.querySelectorAll(".tab-btn").forEach(b => b.classList.remove("active"));
+        document.querySelectorAll(".view-section").forEach(s => s.classList.remove("active"));
+        btn.classList.add("active");
+        document.getElementById(viewId).classList.add("active");
+        if (onOpen) onOpen();
+      });
+    }
 
-      if (tabName === 'map') {
-        document.querySelectorAll(".tab-btn")[0].classList.add("active");
-        document.getElementById("view-map").classList.add("active");
-      } else if (tabName === 'farm') {
-        document.querySelectorAll(".tab-btn")[1].classList.add("active");
-        document.getElementById("view-farm").classList.add("active");
-        updateFarmUI();
-      } else if (tabName === 'battle') {
-        document.querySelectorAll(".tab-btn")[2].classList.add("active");
-        document.getElementById("view-battle").classList.add("active");
-        setupBattleUI();
-      }
-    };
+    setupTab("tabNav-map", "view-map");
+    setupTab("tabNav-farm", "view-farm", updateFarmUI);
+    setupTab("tabNav-shop", "view-shop");
+    setupTab("tabNav-battle", "view-battle", setupBattleUI);
 
+    // 7. Farm System
     function updateFarmUI() {
       const container = document.getElementById("farmContainer");
       document.getElementById("petCount").innerText = caughtSpirits.length;
-      
+
       if (caughtSpirits.length === 0) {
         container.innerHTML = `<div style="grid-column: 1/-1; text-align:center; padding: 40px; color: var(--text-muted);">
           ยังไม่มีสัตว์เลี้ยงในฟาร์ม<br>ออกไปสำรวจแผนที่เพื่อจับสัตว์วิญญาณด้วย Spirit Ball!
@@ -733,130 +749,168 @@
       }
 
       container.innerHTML = caughtSpirits.map((pet, idx) => `
-        <div class="spirit-card">
+        <div class="spirit-card ${idx === companionIndex ? 'active-companion' : ''}">
           <div class="spirit-avatar">${pet.icon}</div>
-          <div class="spirit-name">${pet.name}</div>
-          <div class="spirit-zone">ถิ่นกำเนิด: ${pet.zone}</div>
-          <div class="spirit-stat">
-            <span>พลังรบ</span>
+          <div style="font-weight:700;">${pet.name} (Lv.${pet.level})</div>
+          <div style="font-size:0.8rem; color:var(--text-muted);">${pet.zone}</div>
+          <div style="width:100%; display:flex; justify-content:space-between; font-size:0.8rem; margin: 4px 0;">
+            <span>พลังรบ:</span>
             <span style="color:var(--gold); font-weight:700;">⚔️ ${pet.power}</span>
           </div>
+          <button class="btn-pet-action" onclick="feedPet(${idx})">🍖 ให้อาหาร (+Power)</button>
+          <button class="btn-pet-action" style="background:var(--accent); margin-top:4px;" onclick="setCompanion(${idx})">
+            ${idx === companionIndex ? '⭐ เป็นคู่หูอยู่' : 'เลือกเป็นคู่หูรบ'}
+          </button>
         </div>
       `).join('');
     }
 
-    // Battle System
-    let enemyHpVal = 100;
-    let playerHpVal = 100;
+    window.feedPet = function(idx) {
+      if (gold < 10) { alert("Gold ไม่พอสำหรับซื้ออาหาร (10 Gold)"); return; }
+      gold -= 10;
+      document.getElementById("goldVal").innerText = gold;
+      caughtSpirits[idx].power += 5;
+      alert(`🍖 ให้อาหาร ${caughtSpirits[idx].name} สำเร็จ! พลังรบเพิ่มขึ้นเป็น ${caughtSpirits[idx].power}`);
+      updateFarmUI();
+    };
+
+    window.setCompanion = function(idx) {
+      companionIndex = idx;
+      alert(`⭐ ตั้งให้ ${caughtSpirits[idx].name} เป็นสัตว์เลี้ยงคู่หูหลักแล้ว!`);
+      updateFarmUI();
+    };
+
+    // 8. Shop System
+    document.getElementById("btn-buy-ball").addEventListener("click", () => {
+      if (gold < 30) { alert("Gold ไม่เพียงพอ!"); return; }
+      gold -= 30;
+      balls++;
+      document.getElementById("goldVal").innerText = gold;
+      document.getElementById("ballVal").innerText = balls;
+      alert("ซื้อ Spirit Ball 1 ลูก สำเร็จ!");
+    });
+
+    document.getElementById("btn-buy-potion").addEventListener("click", () => {
+      if (gold < 20) { alert("Gold ไม่เพียงพอ!"); return; }
+      gold -= 20;
+      potions++;
+      document.getElementById("goldVal").innerText = gold;
+      alert(`ซื้อ ยาฟื้นฟู สำเร็จ! (ตอนนี้มี ${potions} ขวด)`);
+    });
+
+    // 9. Battle Arena System
+    let enemyHp = 100;
+    let playerHp = 100;
 
     function setupBattleUI() {
-      enemyHpVal = 100;
-      playerHpVal = 100;
+      enemyHp = 100;
+      playerHp = 100;
       document.getElementById("enemyHp").style.width = "100%";
       document.getElementById("playerHp").style.width = "100%";
       document.getElementById("battleLog").innerText = "การประลองเริ่มต้น! เลือกทักษะการต่อสู้";
 
-      if (caughtSpirits.length > 0) {
-        const myLead = caughtSpirits[0];
-        document.getElementById("battleMyPetIcon").innerText = myLead.icon;
-        document.getElementById("battleMyPetName").innerText = myLead.name;
+      if (caughtSpirits.length > 0 && caughtSpirits[companionIndex]) {
+        const pet = caughtSpirits[companionIndex];
+        document.getElementById("battleMyPetIcon").innerText = pet.icon;
+        document.getElementById("battleMyPetName").innerText = `${pet.name} (Lv.${pet.level})`;
       }
     }
 
-    window.battleAction = function(type) {
-      if (enemyHpVal <= 0) return;
+    document.getElementById("btn-atk").addEventListener("click", () => doBattleAction('attack'));
+    document.getElementById("btn-skill").addEventListener("click", () => doBattleAction('skill'));
+    document.getElementById("btn-heal").addEventListener("click", () => doBattleAction('heal'));
+    document.getElementById("btn-flee").addEventListener("click", () => {
+      document.getElementById("tabNav-map").click();
+    });
+
+    function doBattleAction(type) {
+      if (enemyHp <= 0) return;
 
       let pDmg = 0;
       if (type === 'attack') pDmg = Math.floor(Math.random() * 20) + 15;
-      if (type === 'skill') pDmg = Math.floor(Math.random() * 35) + 10;
+      if (type === 'skill') pDmg = Math.floor(Math.random() * 30) + 20;
       if (type === 'heal') {
-        playerHpVal = Math.min(100, playerHpVal + 30);
-        document.getElementById("playerHp").style.width = playerHpVal + "%";
-        document.getElementById("battleLog").innerText = "คุณฟื้นฟูพลังชีวิต +30 HP!";
+        if (potions <= 0) { alert("คุณไม่มียาฟื้นฟูเหลืออยู่! ไปซื้อได้ที่ร้านค้า"); return; }
+        potions--;
+        playerHp = Math.min(100, playerHp + 35);
+        document.getElementById("playerHp").style.width = playerHp + "%";
+        document.getElementById("battleLog").innerText = "ใช้ยาฟื้นฟู +35 HP!";
       }
 
       if (pDmg > 0) {
-        enemyHpVal = Math.max(0, enemyHpVal - pDmg);
-        document.getElementById("enemyHp").style.width = enemyHpVal + "%";
+        enemyHp = Math.max(0, enemyHp - pDmg);
+        document.getElementById("enemyHp").style.width = enemyHp + "%";
         document.getElementById("battleLog").innerText = `คุณสร้างความเสียหาย ${pDmg} DMG!`;
       }
 
-      if (enemyHpVal <= 0) {
-        document.getElementById("battleLog").innerText = "🎉 ชนะการประลอง! คุณได้รับ 50 Gold!";
+      if (enemyHp <= 0) {
+        document.getElementById("battleLog").innerText = "🎉 ได้รับชัยชนะ! คุณได้รับรางวัล 50 Gold!";
         gold += 50;
         document.getElementById("goldVal").innerText = gold;
         return;
       }
 
-      // Enemy Counter Attack
+      // Enemy Turn
       setTimeout(() => {
         const eDmg = Math.floor(Math.random() * 18) + 10;
-        playerHpVal = Math.max(0, playerHpVal - eDmg);
-        document.getElementById("playerHp").style.width = playerHpVal + "%";
-        document.getElementById("battleLog").innerText += ` | บอสสวนกลับ ${eDmg} DMG!`;
-        if (playerHpVal <= 0) {
+        playerHp = Math.max(0, playerHp - eDmg);
+        document.getElementById("playerHp").style.width = playerHp + "%";
+        document.getElementById("battleLog").innerText += ` | บอสโจมตีกลับ ${eDmg} DMG!`;
+        if (playerHp <= 0) {
           alert("สัตว์เลี้ยงของคุณหมดสภาพการต่อสู้!");
-          window.switchTab('map');
+          document.getElementById("tabNav-map").click();
         }
       }, 500);
-    };
+    }
 
-    // Render Canvas Loop (60 FPS)
+    // 10. Main Render Loop
     function render() {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-      // 1. Draw Multi-Zone Tiles
-      for (let r = 0; r < GRID_DIM; r++) {
-        for (let c = 0; c < GRID_DIM; c++) {
-          const type = biomeMap[r][c];
-          if (type === 0) {
-            // ป่าหญ้าเขียว
-            ctx.fillStyle = (r + c) % 2 === 0 ? "#1b4332" : "#2d6a4f";
-          } else if (type === 1) {
-            // ดินภูเขาไฟ/หินแดง
-            ctx.fillStyle = (r + c) % 2 === 0 ? "#7f1d1d" : "#991b1b";
-          } else if (type === 2) {
-            // บึงน้ำสีคราม
-            ctx.fillStyle = (r + c) % 2 === 0 ? "#0369a1" : "#0284c7";
-          } else if (type === 3) {
-            // สิ่งกีดขวาง (ต้นไม้/หินใหญ่)
-            ctx.fillStyle = "#0f172a";
-          }
+      // วาดแผ่นกระเบื้องแผนที่ 31 x 15
+      for (let r = 0; r < ROWS; r++) {
+        for (let c = 0; c < COLS; c++) {
+          const type = mapGrid[r][c];
+          if (type === 0) ctx.fillStyle = (r + c) % 2 === 0 ? "#1e3a2f" : "#244739";
+          else if (type === 1) ctx.fillStyle = (r + c) % 2 === 0 ? "#7f1d1d" : "#991b1b";
+          else if (type === 2) ctx.fillStyle = (r + c) % 2 === 0 ? "#0369a1" : "#0284c7";
+          else if (type === 3) ctx.fillStyle = "#0f172a";
 
           ctx.fillRect(c * TILE, r * TILE, TILE, TILE);
-          ctx.strokeStyle = "rgba(255, 255, 255, 0.04)";
+          ctx.strokeStyle = "rgba(255, 255, 255, 0.03)";
           ctx.strokeRect(c * TILE, r * TILE, TILE, TILE);
 
-          // สิ่งกีดขวางไอคอน
           if (type === 3) {
             ctx.font = "20px sans-serif";
-            ctx.fillText("🌲", c * TILE + TILE/2, r * TILE + TILE/2);
+            ctx.textAlign = "center";
+            ctx.textBaseline = "middle";
+            ctx.fillText("🌲", c * TILE + TILE / 2, r * TILE + TILE / 2);
           }
         }
       }
 
-      // 2. Draw Wild Spirits on Field
+      // วาดสัตว์ป่าในแมพ
+      ctx.font = "26px sans-serif";
       ctx.textAlign = "center";
       ctx.textBaseline = "middle";
-      ctx.font = "26px sans-serif";
       for (const s of wildSpirits) {
-        ctx.fillText(s.icon, s.x * TILE + TILE/2, s.y * TILE + TILE/2);
+        ctx.fillText(s.icon, s.x * TILE + TILE / 2, s.y * TILE + TILE / 2);
       }
 
-      // 3. Smooth Player Interpolation
+      // Smooth Interpolation ตัวละครผู้เล่น
       player.px += (player.targetPx - player.px) * 0.3;
       player.py += (player.targetPy - player.py) * 0.3;
 
-      // วาดเงา
+      // เงา
       ctx.fillStyle = "rgba(0, 0, 0, 0.4)";
       ctx.beginPath();
-      ctx.ellipse(player.px + TILE/2, player.py + TILE/2 + 14, 14, 6, 0, 0, Math.PI * 2);
+      ctx.ellipse(player.px + TILE / 2, player.py + TILE / 2 + 14, 14, 6, 0, 0, Math.PI * 2);
       ctx.fill();
 
-      // วาดตัวละครผู้เล่น (Trainer Token)
+      // ตัวละครผู้เล่น
       ctx.fillStyle = "#38bdf8";
       ctx.beginPath();
-      ctx.arc(player.px + TILE/2, player.py + TILE/2, 16, 0, Math.PI * 2);
+      ctx.arc(player.px + TILE / 2, player.py + TILE / 2, 16, 0, Math.PI * 2);
       ctx.fill();
       ctx.lineWidth = 3;
       ctx.strokeStyle = "#ffffff";
@@ -864,7 +918,14 @@
 
       ctx.fillStyle = "#fff";
       ctx.font = "12px Kanit";
-      ctx.fillText("You", player.px + TILE/2, player.py + TILE/2 - 22);
+      ctx.fillText("You", player.px + TILE / 2, player.py + TILE / 2 - 22);
+
+      // วาดสัตว์เลี้ยงคู่หูเดินตามหลัง (ถ้ามี)
+      if (caughtSpirits.length > 0 && caughtSpirits[companionIndex]) {
+        const pet = caughtSpirits[companionIndex];
+        ctx.font = "20px sans-serif";
+        ctx.fillText(pet.icon, player.px + TILE / 2 - 24, player.py + TILE / 2 + 8);
+      }
 
       requestAnimationFrame(render);
     }
